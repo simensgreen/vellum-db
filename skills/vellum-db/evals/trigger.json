@@ -1,0 +1,44 @@
+[
+  {
+    "id": "query-open-tasks-should-trigger",
+    "should_trigger": true,
+    "target_skill": "vellum-db",
+    "query": "Query the tasks table for open items and sort by points descending."
+  },
+  {
+    "id": "aggregate-by-status-should-trigger",
+    "should_trigger": true,
+    "target_skill": "vellum-db",
+    "query": "Aggregate total points per status in vellum-db."
+  },
+  {
+    "id": "saved-query-run-should-trigger",
+    "should_trigger": true,
+    "target_skill": "vellum-db",
+    "query": "Save a named query for tasks by status and run it with status=done."
+  },
+  {
+    "id": "list-tables-filter-should-trigger",
+    "should_trigger": true,
+    "target_skill": "vellum-db",
+    "query": "List tables then db_query rows where priority gte 2 using a JSON filter."
+  },
+  {
+    "id": "create-table-near-miss-should-not",
+    "should_trigger": false,
+    "target_skill": "vellum-db",
+    "query": "Create a new tasks table in vellum-db with title and status columns."
+  },
+  {
+    "id": "alter-schema-should-not",
+    "should_trigger": false,
+    "target_skill": "vellum-db",
+    "query": "Add an owner column to the tasks table schema."
+  },
+  {
+    "id": "git-status-should-not",
+    "should_trigger": false,
+    "target_skill": "vellum-db",
+    "query": "What does git status show in this repo?"
+  }
+]

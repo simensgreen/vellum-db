@@ -1,0 +1,44 @@
+[
+  {
+    "id": "create-table-should-trigger",
+    "should_trigger": true,
+    "target_skill": "vellum-db-meta",
+    "query": "Create a vellum-db table for projects with name, status, and optional deadline JSON Schema."
+  },
+  {
+    "id": "list-schemas-should-trigger",
+    "should_trigger": true,
+    "target_skill": "vellum-db-meta",
+    "query": "List all structured tables and show me their columns and JSON schemas."
+  },
+  {
+    "id": "add-column-should-trigger",
+    "should_trigger": true,
+    "target_skill": "vellum-db-meta",
+    "query": "Add an owner column to the tasks table in vellum-db."
+  },
+  {
+    "id": "drop-table-should-trigger",
+    "should_trigger": true,
+    "target_skill": "vellum-db-meta",
+    "query": "Drop the obsolete scratch table from the agent database; allowDropTable is enabled."
+  },
+  {
+    "id": "query-open-tasks-near-miss-should-not",
+    "should_trigger": false,
+    "target_skill": "vellum-db-meta",
+    "query": "Query open tasks from the tasks table ordered by priority."
+  },
+  {
+    "id": "insert-rows-should-not",
+    "should_trigger": false,
+    "target_skill": "vellum-db-meta",
+    "query": "Insert three new task rows into the tasks table."
+  },
+  {
+    "id": "aggregate-should-not",
+    "should_trigger": false,
+    "target_skill": "vellum-db-meta",
+    "query": "Aggregate task counts by status for the dashboard."
+  }
+]
