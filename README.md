@@ -76,12 +76,24 @@ Browse more servers: [MCP Registry](https://registry.modelcontextprotocol.io/).
 
 See `config.json` and [AGENTS.md](./AGENTS.md) for keys (`maxRowsPerQuery`, `rawSqlMode`, `databasePath`, `allowDropTable`) and layout for contributors.
 
+## Install (Vellum workspace)
+
+`assistant plugins install` materializes the plugin tree but **does not** run `bun install`. The host only links a small shared whitelist (today: `zod`) into `<workspace>/node_modules`. This plugin’s runtime deps (`ajv`, `@truto/sqlite-builder`, `nanoid`, `xlsx`) are not on that list.
+
+After install (or upgrade), from the plugin directory:
+
+```bash
+cd plugins/vellum-db && bun install
+```
+
+Longer-term options (vendor / zero-deps rewrite / ship `node_modules`) are listed in [AGENTS.md](./AGENTS.md).
+
 ## Develop
 
 ```bash
 bun install
-RUSTUP_TOOLCHAIN=stable bunx tsc --noEmit
-RUSTUP_TOOLCHAIN=stable bun test
+bunx tsc --noEmit
+bun test
 ```
 
 This repository root **is** the plugin (`hooks/`, `tools/`, `skills/`, `src/`).

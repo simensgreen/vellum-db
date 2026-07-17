@@ -22,7 +22,6 @@ const inputSchema = {
     },
   },
   required: ["table", "path", "mode"],
-  additionalProperties: false,
 } as const;
 
 export default {

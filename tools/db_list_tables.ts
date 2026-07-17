@@ -20,7 +20,6 @@ const inputSchema = {
     limit: { type: "integer", minimum: 1 },
     offset: { type: "integer", minimum: 0 },
   },
-  additionalProperties: false,
 } as const;
 
 export default {

@@ -22,7 +22,6 @@ const inputSchema = {
           },
         },
         required: ["name", "schema"],
-        additionalProperties: false,
       },
     },
     drop: {
@@ -37,7 +36,6 @@ const inputSchema = {
     },
   },
   required: ["table"],
-  additionalProperties: false,
 } as const;
 
 export default {

@@ -30,7 +30,6 @@ const inputSchema = {
     on_conflict: onConflictInputSchema,
   },
   required: ["table", "path", "mode"],
-  additionalProperties: false,
 } as const;
 
 export default {

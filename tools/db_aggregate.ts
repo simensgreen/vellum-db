@@ -31,7 +31,6 @@ const inputSchema = {
           as: { type: "string" },
         },
         required: ["fn", "as"],
-        additionalProperties: false,
       },
     },
     group_by: { type: "array", items: { type: "string" } },
@@ -44,7 +43,6 @@ const inputSchema = {
     offset: { type: "integer", minimum: 0 },
   },
   required: ["table", "metrics"],
-  additionalProperties: false,
 } as const;
 
 export function executeAggregateDefinition(definition: AggregateDefinition) {

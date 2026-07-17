@@ -27,7 +27,6 @@ const inputSchema = {
     },
   },
   required: ["name", "schema"],
-  additionalProperties: false,
 } as const;
 
 export default {

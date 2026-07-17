@@ -22,7 +22,6 @@ const inputSchema = {
     on_conflict: onConflictInputSchema,
   },
   required: ["table", "row"],
-  additionalProperties: false,
 } as const;
 
 export default {

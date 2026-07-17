@@ -50,13 +50,13 @@ Data is **workspace-global** (not per-conversation), so there is no `conversatio
 
 ```bash
 bun install
-RUSTUP_TOOLCHAIN=stable bunx tsc --noEmit
+bunx tsc --noEmit
 ```
 
 Smoke test (no Vellum host required):
 
 ```bash
-RUSTUP_TOOLCHAIN=stable bun test
+bun test
 ```
 
 ## Always
@@ -64,12 +64,26 @@ RUSTUP_TOOLCHAIN=stable bun test
 - Persist only under plugin `data/` (`pluginStorageDir` from `init`).
 - Validate agent table schemas and rows with Ajv.
 - Prefer JSON tools over `db_sql` for routine work.
+- Tool `input_schema` MUST NOT set `additionalProperties: false` at the tool-input root (or anywhere that rejects host-injected fields). Vellum injects `activity` into tool calls; rejecting unknown properties breaks every invocation.
 - List tools that can return many rows (`db_list_tables`, `db_list_saved_queries`, `db_query`, `db_aggregate`) use `limit`/`offset` and return `has_more`.
 - Optional table `scope` (`[a-z][a-z0-9_]*`) filters `db_list_tables`; set on create/alter.
 - `db_load` / `db_dump`: relative `path` under the Vellum workspace (`VELLUM_WORKSPACE_DIR` when set, else derived from `pluginStorageDir`); paths must stay inside the workspace. Dump includes `id`. Load may include `id` for `on_conflict`.
 - `db_insert` / `db_load` support `on_conflict`: `abort` (default) \| `ignore` \| `replace` — conflict is on primary key `id` (nanoid TEXT) only.
 - Row `id` is a nanoid string (`TEXT PRIMARY KEY`), generated on insert when omitted.
 - Tool `execute` signatures take `(input, ctx: ToolContext)` and return `Promise<ToolExecutionResult>`.
+
+## Dependencies (host does not install them)
+
+Vellum **never** runs `bun install` for plugins (`ensure-shared-dep-links.ts`). Bare imports resolve by walking up to `<workspace>/node_modules`; the host only symlinks a **whitelist** of shared deps (currently `zod`) from the assistant into that tree. `@vellumai/plugin-api` is shimmed separately.
+
+Runtime deps of this plugin (`@truto/sqlite-builder`, `ajv`, `nanoid`, `xlsx`) are **not** on that whitelist. Options:
+
+1. **Ship `node_modules` with the plugin** — install materializes the tree verbatim; fingerprinting excludes `node_modules`. Heaviest artifact.
+2. **Post-install step for operators** — after `assistant plugins install`, run `bun install` inside `plugins/vellum-db/` (document in README). Not automatic.
+3. **Vendor / inline** — copy or rewrite small deps (`nanoid`); drop or replace heavier ones (`xlsx`, Ajv, sqlite-builder) with Bun-stdlib or in-repo code so the plugin has zero runtime `dependencies`.
+4. **Do not rely on expanding the host whitelist** — that list is treated as public SDK surface and only pure-JS assistant deps belong there.
+
+Prefer (3) long-term; (2) is the pragmatic local-dev path today.
 
 ## Never
 

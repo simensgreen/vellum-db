@@ -22,11 +22,9 @@ const inputSchema = {
     params: {
       type: "object",
       description: 'Values for "$param" placeholders in the saved definition',
-      additionalProperties: true,
     },
   },
   required: ["name"],
-  additionalProperties: false,
 } as const;
 
 export default {

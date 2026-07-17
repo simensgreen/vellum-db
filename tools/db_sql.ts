@@ -17,7 +17,6 @@ const inputSchema = {
     },
   },
   required: ["sql"],
-  additionalProperties: false,
 } as const;
 
 export default {

@@ -29,7 +29,6 @@ const inputSchema = {
     },
   },
   required: ["table", "filter", "patch"],
-  additionalProperties: false,
 } as const;
 
 export default {

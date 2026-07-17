@@ -11,7 +11,6 @@ const inputSchema = {
     name: { type: "string" },
   },
   required: ["name"],
-  additionalProperties: false,
 } as const;
 
 export default {

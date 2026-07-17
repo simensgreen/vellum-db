@@ -30,7 +30,6 @@ const inputSchema = {
     },
   },
   required: ["name", "kind", "definition"],
-  additionalProperties: false,
 } as const;
 
 export default {

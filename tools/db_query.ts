@@ -36,7 +36,6 @@ const inputSchema = {
           direction: { type: "string", enum: ["asc", "desc"] },
         },
         required: ["column"],
-        additionalProperties: false,
       },
     },
     limit: { type: "integer", minimum: 1 },
@@ -48,7 +47,6 @@ const inputSchema = {
     },
   },
   required: ["table"],
-  additionalProperties: false,
 } as const;
 
 export function executeQueryDefinition(definition: QueryDefinition) {

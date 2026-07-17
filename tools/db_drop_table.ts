@@ -14,7 +14,6 @@ const inputSchema = {
     },
   },
   required: ["table"],
-  additionalProperties: false,
 } as const;
 
 export default {
