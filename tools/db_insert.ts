@@ -2,12 +2,11 @@ import type {
   ToolContext,
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
+import { insertRow } from "../src/core/rows.ts";
 import {
-  insertTableRow,
   onConflictInputSchema,
   parseOnConflict,
-} from "../src/insert.ts";
-import { requireTable } from "../src/catalog.ts";
+} from "../src/core/insert.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
@@ -34,21 +33,12 @@ export default {
     input: Record<string, unknown>,
     _ctx: ToolContext,
   ): Promise<ToolExecutionResult> {
-    return runTool(input, inputSchema, (validated) => {
-      const table = requireTable(String(validated.table));
-      const onConflict = parseOnConflict(validated.on_conflict);
-      const result = insertTableRow(
-        table,
-        validated.row as Record<string, unknown>,
-        onConflict,
-      );
-      return {
-        table: table.name,
-        id: result.id,
-        changes: result.changes,
-        outcome: result.outcome,
-        on_conflict: onConflict,
-      };
-    });
+    return runTool(input, inputSchema, (validated) =>
+      insertRow({
+        table: String(validated.table),
+        row: validated.row as Record<string, unknown>,
+        on_conflict: parseOnConflict(validated.on_conflict),
+      }),
+    );
   },
 };

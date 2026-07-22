@@ -2,7 +2,7 @@ import type {
   ToolContext,
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
-import { alterUserTable, getTableColumns } from "../src/catalog.ts";
+import { alterTable } from "../src/core/table-ddl.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
@@ -49,23 +49,22 @@ export default {
     _ctx: ToolContext,
   ): Promise<ToolExecutionResult> {
     return runTool(input, inputSchema, (validated) => {
-      const table = alterUserTable({
+      const alterInput: {
+        table: string;
+        add?: Array<{ name: string; schema: unknown }>;
+        drop?: string[];
+        scope?: string | null;
+      } = {
         table: String(validated.table),
         add: validated.add as
           | Array<{ name: string; schema: unknown }>
           | undefined,
         drop: validated.drop as string[] | undefined,
-        ...(Object.prototype.hasOwnProperty.call(validated, "scope")
-          ? { scope: validated.scope as string | null }
-          : {}),
-      });
-      return {
-        name: table.name,
-        scope: table.scope,
-        schema: JSON.parse(table.schema_json),
-        columns: getTableColumns(table).map((column) => column.name),
-        updated_at: table.updated_at,
       };
+      if (Object.prototype.hasOwnProperty.call(validated, "scope")) {
+        alterInput.scope = validated.scope as string | null;
+      }
+      return alterTable(alterInput);
     });
   },
 };

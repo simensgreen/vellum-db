@@ -3,19 +3,11 @@ import type {
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
 import type { JsonFilter } from "@truto/sqlite-builder";
-import { getDatabase } from "../src/db.ts";
-import { asBindings } from "../src/bindings.ts";
 import {
-  decodeRow,
-  getTableColumns,
-  requireTable,
-} from "../src/catalog.ts";
-import { pageFromRows } from "../src/pagination.ts";
-import {
-  compileSelectQuery,
-  type OrderSpec,
-  type QueryDefinition,
-} from "../src/query-compile.ts";
+  buildQueryDefinition,
+  executeQueryDefinition,
+} from "../src/core/query.ts";
+import type { OrderSpec } from "../src/core/query-compile.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
@@ -49,23 +41,7 @@ const inputSchema = {
   required: ["table"],
 } as const;
 
-export function executeQueryDefinition(definition: QueryDefinition) {
-  const table = requireTable(definition.table);
-  const columns = getTableColumns(table);
-  const compiled = compileSelectQuery(definition);
-  const fetched = getDatabase()
-    .query(compiled.text)
-    .all(...asBindings(compiled.values)) as Record<string, unknown>[];
-  const page = pageFromRows(fetched, compiled.limit, compiled.offset);
-  return {
-    table: table.name,
-    count: page.count,
-    limit: page.limit,
-    offset: page.offset,
-    has_more: page.has_more,
-    rows: page.items.map((row) => decodeRow(row, columns)),
-  };
-}
+export { executeQueryDefinition };
 
 export default {
   description:
@@ -77,16 +53,17 @@ export default {
     input: Record<string, unknown>,
     _ctx: ToolContext,
   ): Promise<ToolExecutionResult> {
-    return runTool(input, inputSchema, (validated) => {
-      const definition: QueryDefinition = {
-        table: String(validated.table),
-        filter: validated.filter as JsonFilter | undefined,
-        order: validated.order as OrderSpec[] | undefined,
-        limit: validated.limit as number | undefined,
-        offset: validated.offset as number | undefined,
-        columns: validated.columns as string[] | undefined,
-      };
-      return executeQueryDefinition(definition);
-    });
+    return runTool(input, inputSchema, (validated) =>
+      executeQueryDefinition(
+        buildQueryDefinition({
+          table: String(validated.table),
+          filter: validated.filter as JsonFilter | undefined,
+          order: validated.order as OrderSpec[] | undefined,
+          limit: validated.limit as number | undefined,
+          offset: validated.offset as number | undefined,
+          columns: validated.columns as string[] | undefined,
+        }),
+      ),
+    );
   },
 };

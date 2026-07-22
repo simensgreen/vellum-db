@@ -1,13 +1,13 @@
 import { nanoid } from "nanoid";
-import { asBindings } from "./bindings.ts";
+import { asBindings } from "../bindings.ts";
 import {
   encodeCellValue,
   getTableColumns,
   quoteIdentExport,
   type TableRow,
 } from "./catalog.ts";
-import { getDatabase } from "./db.ts";
-import { validateRowAgainstSchema } from "./schema-validate.ts";
+import { getDatabase } from "../db.ts";
+import { validateRowAgainstSchema } from "../schema-validate.ts";
 
 export type OnConflict = "abort" | "ignore" | "replace";
 

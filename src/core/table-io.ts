@@ -9,7 +9,7 @@ import {
   type ColumnSpec,
   type TableRow,
 } from "./catalog.ts";
-import { getDatabase, getWorkspaceDir } from "./db.ts";
+import { getDatabase, getWorkspaceDir } from "../db.ts";
 import {
   insertTableRow,
   parseOnConflict,
@@ -19,7 +19,9 @@ import {
 import {
   assertTableJsonSchema,
   type JsonSchemaObject,
-} from "./schema-validate.ts";
+} from "../schema-validate.ts";
+import { invalidationTagsForRowMutation } from "./sync-tags.ts";
+import { notifyInvalidation } from "./sync.ts";
 
 export type IoMode = "csv" | "json" | "jsonl" | "xls";
 
@@ -411,6 +413,9 @@ export function loadTableFromFile(input: {
   const onConflict = parseOnConflict(input.on_conflict);
   const rows = readRowsFromFile(path, input.mode);
   const counts = insertRows(table, rows, onConflict);
+  if (counts.inserted > 0 || counts.replaced > 0) {
+    notifyInvalidation(invalidationTagsForRowMutation(table.name));
+  }
   return {
     table: table.name,
     path,

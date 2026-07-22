@@ -2,7 +2,7 @@ import type {
   PluginHookFn,
   PluginInitContext,
 } from "@vellumai/plugin-api";
-import { ensureMetaSchema } from "../src/catalog.ts";
+import { ensureMetaSchema } from "../src/core/catalog.ts";
 import {
   getDatabasePath,
   getWorkspaceDir,

@@ -2,9 +2,7 @@ import type {
   ToolContext,
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
-import { getConfig, getDatabase } from "../src/db.ts";
-import { asBindings } from "../src/bindings.ts";
-import { guardRawSql } from "../src/sql-guard.ts";
+import { executeRawSql } from "../src/core/sql.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
@@ -29,26 +27,8 @@ export default {
     input: Record<string, unknown>,
     _ctx: ToolContext,
   ): Promise<ToolExecutionResult> {
-    return runTool(input, inputSchema, (validated) => {
-      const guarded = guardRawSql(String(validated.sql));
-      const database = getDatabase();
-      if (guarded.isSelect) {
-        const rows = database.query(guarded.sql).all();
-        const maxRows = getConfig().maxRowsPerQuery;
-        const clipped = rows.slice(0, maxRows);
-        return {
-          kind: "select",
-          count: clipped.length,
-          truncated: rows.length > maxRows,
-          rows: clipped,
-        };
-      }
-      const result = database.query(guarded.sql).run(...asBindings([]));
-      return {
-        kind: "exec",
-        changes: result.changes,
-        lastInsertRowid: Number(result.lastInsertRowid),
-      };
-    });
+    return runTool(input, inputSchema, (validated) =>
+      executeRawSql(String(validated.sql)),
+    );
   },
 };

@@ -2,7 +2,7 @@ import type {
   ToolContext,
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
-import { dumpTableToFile, type IoMode } from "../src/table-io.ts";
+import { dumpTableToFile, type IoMode } from "../src/core/table-io.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {

@@ -9,7 +9,7 @@ import {
   ensureMetaSchema,
   getTableColumns,
   listTables,
-} from "../src/catalog.ts";
+} from "../src/core/catalog.ts";
 import {
   closeDatabase,
   getDatabase,
@@ -18,19 +18,19 @@ import {
   parseConfig,
   resolveWorkspaceDir,
 } from "../src/db.ts";
-import { compileSelectQuery } from "../src/query-compile.ts";
+import { compileSelectQuery } from "../src/core/query-compile.ts";
 import {
   deleteSavedQuery,
   listSavedQueries,
   saveQuery,
   substituteParams,
-} from "../src/saved-queries.ts";
+} from "../src/core/saved-queries.ts";
 import { guardRawSql } from "../src/sql-guard.ts";
 import { validateRowAgainstSchema } from "../src/schema-validate.ts";
-import { dumpTableToFile, loadTableFromFile } from "../src/table-io.ts";
-import { insertTableRow } from "../src/insert.ts";
-import { executeAggregateDefinition } from "../tools/db_aggregate.ts";
-import { executeQueryDefinition } from "../tools/db_query.ts";
+import { dumpTableToFile, loadTableFromFile } from "../src/core/table-io.ts";
+import { insertTableRow } from "../src/core/insert.ts";
+import { executeAggregateDefinition } from "../src/core/aggregate.ts";
+import { executeQueryDefinition } from "../src/core/query.ts";
 
 function withTempDb(): string {
   const dir = mkdtempSync(join(tmpdir(), "vellum-db-"));

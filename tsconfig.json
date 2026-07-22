@@ -14,5 +14,5 @@
     "verbatimModuleSyntax": true,
     "noUncheckedIndexedAccess": true
   },
-  "include": ["hooks/**/*.ts", "tools/**/*.ts", "src/**/*.ts", "tests/**/*.ts"]
+  "include": ["hooks/**/*.ts", "tools/**/*.ts", "routes/**/*.ts", "src/**/*.ts", "tests/**/*.ts"]
 }

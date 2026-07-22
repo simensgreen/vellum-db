@@ -46,6 +46,14 @@ Built-in skills:
 
 Domain skills should depend on these: spell out table names, schemas, and procedures; call the shared `db_*` tools.
 
+## REST API
+
+OpenAPI 3.1 spec: [`openapi.json`](./openapi.json) (generated via [`@asteasolutions/zod-to-openapi`](https://github.com/asteasolutions/zod-to-openapi) — `bun run openapi`). Base URL: `/v1/x/plugins/vellum-db/`; auth via Vellum gateway (`settings.read`).
+
+## Tables app
+
+Read-only viewer: app id `plugins~vellum-db~tables`. Uses `window.vellum.fetch` against the routes above and `window.vellum.subscribe` with tags from `sync-tags.ts` for live refresh.
+
 ## Design notes
 
 - **Vellum plugin layout** — matches plugin-builder: `package.json` (+ `vellum: {}`), `config.json`, `hooks/`, `tools/`, `skills/`, `src/`; runtime DB under host-managed `data/` (`InitContext.pluginStorageDir`).
@@ -93,7 +101,10 @@ Longer-term options (vendor / zero-deps rewrite / ship `node_modules`) are liste
 ```bash
 bun install
 bunx tsc --noEmit
+bunx tsc --noEmit -p apps/tables
 bun test
 ```
 
-This repository root **is** the plugin (`hooks/`, `tools/`, `skills/`, `src/`).
+Pre-commit hook (enabled by `bun install`) regenerates `openapi.json` when you commit REST/API schema changes.
+
+This repository root **is** the plugin (`hooks/`, `tools/`, `skills/`, `src/`, `routes/`, `apps/`).

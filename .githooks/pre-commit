@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+staged="$(git diff --cached --name-only)"
+if ! printf '%s\n' "$staged" | grep -qE '^(src/api/|src/openapi/|routes/|scripts/generate-openapi\.ts)'; then
+  exit 0
+fi
+
+bun run openapi
+git add openapi.json

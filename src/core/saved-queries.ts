@@ -1,9 +1,9 @@
 import type { SQLQueryBindings } from "bun:sqlite";
-import { getDatabase } from "./db.ts";
-import { asBindings } from "./bindings.ts";
-import { assertSafeIdentifier } from "./identifiers.ts";
-import { pageFromRows, resolvePage } from "./pagination.ts";
-import { validateAgainstSchema } from "./schema-validate.ts";
+import { getDatabase } from "../db.ts";
+import { asBindings } from "../bindings.ts";
+import { assertSafeIdentifier } from "../identifiers.ts";
+import { pageFromRows, resolvePage } from "../pagination.ts";
+import { validateAgainstSchema } from "../schema-validate.ts";
 import type {
   AggregateDefinition,
   QueryDefinition,

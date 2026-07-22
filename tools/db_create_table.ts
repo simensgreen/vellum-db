@@ -2,10 +2,7 @@ import type {
   ToolContext,
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
-import {
-  createUserTable,
-  getTableColumns,
-} from "../src/catalog.ts";
+import { createTable } from "../src/core/table-ddl.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
@@ -39,17 +36,12 @@ export default {
     input: Record<string, unknown>,
     _ctx: ToolContext,
   ): Promise<ToolExecutionResult> {
-    return runTool(input, inputSchema, (validated) => {
-      const table = createUserTable(String(validated.name), validated.schema, {
+    return runTool(input, inputSchema, (validated) =>
+      createTable({
+        name: String(validated.name),
+        schema: validated.schema,
         scope: validated.scope as string | null | undefined,
-      });
-      return {
-        name: table.name,
-        scope: table.scope,
-        schema: JSON.parse(table.schema_json),
-        columns: getTableColumns(table).map((column) => column.name),
-        created_at: table.created_at,
-      };
-    });
+      }),
+    );
   },
 };

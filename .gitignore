@@ -4,6 +4,7 @@ node_modules
 # output
 out
 dist
+apps/**/dist
 *.tgz
 
 # plugin runtime state (host-preserved; not source)

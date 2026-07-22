@@ -1,12 +1,12 @@
 import { compileFilter, sql, type JsonFilter } from "@truto/sqlite-builder";
-import { getConfig } from "./db.ts";
+import { getConfig } from "../db.ts";
 import {
   getTableColumns,
   quoteIdentExport,
   requireTable,
   type ColumnSpec,
 } from "./catalog.ts";
-import { assertSafeIdentifier } from "./identifiers.ts";
+import { assertSafeIdentifier } from "../identifiers.ts";
 
 export type OrderSpec = {
   column: string;

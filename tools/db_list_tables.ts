@@ -2,7 +2,7 @@ import type {
   ToolContext,
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
-import { getTableColumns, listTables } from "../src/catalog.ts";
+import { listTablesView } from "../src/core/list-tables.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
@@ -32,27 +32,13 @@ export default {
     input: Record<string, unknown>,
     _ctx: ToolContext,
   ): Promise<ToolExecutionResult> {
-    return runTool(input, inputSchema, (validated) => {
-      const page = listTables({
+    return runTool(input, inputSchema, (validated) =>
+      listTablesView({
         scope: validated.scope as string | null | undefined,
         name_prefix: validated.name_prefix as string | undefined,
         limit: validated.limit as number | undefined,
         offset: validated.offset as number | undefined,
-      });
-      return {
-        tables: page.tables.map((table) => ({
-          name: table.name,
-          scope: table.scope,
-          schema: JSON.parse(table.schema_json),
-          columns: getTableColumns(table),
-          created_at: table.created_at,
-          updated_at: table.updated_at,
-        })),
-        count: page.count,
-        limit: page.limit,
-        offset: page.offset,
-        has_more: page.has_more,
-      };
-    });
+      }),
+    );
   },
 };

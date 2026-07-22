@@ -2,7 +2,7 @@ import type {
   ToolContext,
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
-import { dropUserTable } from "../src/catalog.ts";
+import { dropTable } from "../src/core/table-ddl.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
@@ -26,8 +26,8 @@ export default {
     input: Record<string, unknown>,
     _ctx: ToolContext,
   ): Promise<ToolExecutionResult> {
-    return runTool(input, inputSchema, (validated) => {
-      return dropUserTable(String(validated.table));
-    });
+    return runTool(input, inputSchema, (validated) =>
+      dropTable({ table: String(validated.table) }),
+    );
   },
 };

@@ -2,7 +2,7 @@ import type {
   ToolContext,
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
-import { listSavedQueries } from "../src/saved-queries.ts";
+import { listSavedQueriesView } from "../src/core/saved-queries-api.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
@@ -32,27 +32,13 @@ export default {
     input: Record<string, unknown>,
     _ctx: ToolContext,
   ): Promise<ToolExecutionResult> {
-    return runTool(input, inputSchema, (validated) => {
-      const page = listSavedQueries({
+    return runTool(input, inputSchema, (validated) =>
+      listSavedQueriesView({
         kind: validated.kind as "query" | "aggregate" | undefined,
         name_prefix: validated.name_prefix as string | undefined,
         limit: validated.limit as number | undefined,
         offset: validated.offset as number | undefined,
-      });
-      return {
-        queries: page.queries.map((row) => ({
-          name: row.name,
-          kind: row.kind,
-          description: row.description,
-          definition: JSON.parse(row.definition_json),
-          created_at: row.created_at,
-          updated_at: row.updated_at,
-        })),
-        count: page.count,
-        limit: page.limit,
-        offset: page.offset,
-        has_more: page.has_more,
-      };
-    });
+      }),
+    );
   },
 };

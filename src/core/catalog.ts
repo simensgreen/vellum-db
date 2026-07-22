@@ -1,13 +1,13 @@
 import type { Database, SQLQueryBindings } from "bun:sqlite";
-import { getConfig, getDatabase } from "./db.ts";
-import { assertSafeIdentifier } from "./identifiers.ts";
-import { pageFromRows, resolvePage } from "./pagination.ts";
-import { asBindings } from "./bindings.ts";
+import { getConfig, getDatabase } from "../db.ts";
+import { assertSafeIdentifier } from "../identifiers.ts";
+import { pageFromRows, resolvePage } from "../pagination.ts";
+import { asBindings } from "../bindings.ts";
 import {
   assertTableJsonSchema,
   invalidateSchemaCache,
   type JsonSchemaObject,
-} from "./schema-validate.ts";
+} from "../schema-validate.ts";
 
 export type TableRow = {
   name: string;

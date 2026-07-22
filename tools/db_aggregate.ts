@@ -3,14 +3,11 @@ import type {
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
 import type { JsonFilter } from "@truto/sqlite-builder";
-import { getDatabase } from "../src/db.ts";
-import { asBindings } from "../src/bindings.ts";
-import { pageFromRows } from "../src/pagination.ts";
 import {
-  compileAggregateQuery,
-  type AggregateDefinition,
+  buildAggregateDefinition,
+  executeAggregateDefinition,
   type AggregateMetric,
-} from "../src/query-compile.ts";
+} from "../src/core/aggregate.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
@@ -45,21 +42,7 @@ const inputSchema = {
   required: ["table", "metrics"],
 } as const;
 
-export function executeAggregateDefinition(definition: AggregateDefinition) {
-  const compiled = compileAggregateQuery(definition);
-  const fetched = getDatabase()
-    .query(compiled.text)
-    .all(...asBindings(compiled.values));
-  const page = pageFromRows(fetched, compiled.limit, compiled.offset);
-  return {
-    table: definition.table,
-    count: page.count,
-    limit: page.limit,
-    offset: page.offset,
-    has_more: page.has_more,
-    rows: page.items,
-  };
-}
+export { executeAggregateDefinition };
 
 export default {
   description:
@@ -71,17 +54,18 @@ export default {
     input: Record<string, unknown>,
     _ctx: ToolContext,
   ): Promise<ToolExecutionResult> {
-    return runTool(input, inputSchema, (validated) => {
-      const definition: AggregateDefinition = {
-        table: String(validated.table),
-        metrics: validated.metrics as AggregateMetric[],
-        group_by: validated.group_by as string[] | undefined,
-        filter: validated.filter as JsonFilter | undefined,
-        having: validated.having as JsonFilter | undefined,
-        limit: validated.limit as number | undefined,
-        offset: validated.offset as number | undefined,
-      };
-      return executeAggregateDefinition(definition);
-    });
+    return runTool(input, inputSchema, (validated) =>
+      executeAggregateDefinition(
+        buildAggregateDefinition({
+          table: String(validated.table),
+          metrics: validated.metrics as AggregateMetric[],
+          group_by: validated.group_by as string[] | undefined,
+          filter: validated.filter as JsonFilter | undefined,
+          having: validated.having as JsonFilter | undefined,
+          limit: validated.limit as number | undefined,
+          offset: validated.offset as number | undefined,
+        }),
+      ),
+    );
   },
 };

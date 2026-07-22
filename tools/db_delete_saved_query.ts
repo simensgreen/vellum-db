@@ -2,7 +2,7 @@ import type {
   ToolContext,
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
-import { deleteSavedQuery } from "../src/saved-queries.ts";
+import { deleteSavedQueryByName } from "../src/core/saved-queries-api.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
@@ -23,9 +23,8 @@ export default {
     input: Record<string, unknown>,
     _ctx: ToolContext,
   ): Promise<ToolExecutionResult> {
-    return runTool(input, inputSchema, (validated) => {
-      deleteSavedQuery(String(validated.name));
-      return { deleted: String(validated.name) };
-    });
+    return runTool(input, inputSchema, (validated) =>
+      deleteSavedQueryByName(String(validated.name)),
+    );
   },
 };

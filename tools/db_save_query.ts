@@ -3,9 +3,9 @@ import type {
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
 import {
-  saveQuery,
+  saveSavedQuery,
   type SavedQueryKind,
-} from "../src/saved-queries.ts";
+} from "../src/core/saved-queries-api.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
@@ -42,8 +42,8 @@ export default {
     input: Record<string, unknown>,
     _ctx: ToolContext,
   ): Promise<ToolExecutionResult> {
-    return runTool(input, inputSchema, (validated) => {
-      const saved = saveQuery({
+    return runTool(input, inputSchema, (validated) =>
+      saveSavedQuery({
         name: String(validated.name),
         kind: validated.kind as SavedQueryKind,
         definition: validated.definition,
@@ -51,14 +51,7 @@ export default {
           typeof validated.description === "string"
             ? validated.description
             : undefined,
-      });
-      return {
-        name: saved.name,
-        kind: saved.kind,
-        description: saved.description,
-        definition: JSON.parse(saved.definition_json),
-        updated_at: saved.updated_at,
-      };
-    });
+      }),
+    );
   },
 };

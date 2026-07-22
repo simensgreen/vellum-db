@@ -5,11 +5,11 @@ import type {
 import {
   loadTableFromFile,
   type IoMode,
-} from "../src/table-io.ts";
+} from "../src/core/table-io.ts";
 import {
   onConflictInputSchema,
   type OnConflict,
-} from "../src/insert.ts";
+} from "../src/core/insert.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
