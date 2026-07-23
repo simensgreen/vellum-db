@@ -1,1 +1,1 @@
-export const TEST_TABLE_SCOPE = "test";
+export const TEST_TABLE_SCOPE = "test"

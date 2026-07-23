@@ -1,4 +1,4 @@
 {
-  "version": 1,
-  "drop": ["migrate_items"]
+    "version": 1,
+    "drop": ["migrate_items"]
 }

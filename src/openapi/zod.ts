@@ -1,6 +1,6 @@
-import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
-import { z } from "../api/zod.ts";
+import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi"
+import { z } from "../api/zod.ts"
 
-extendZodWithOpenApi(z);
+extendZodWithOpenApi(z)
 
-export { z };
+export { z }

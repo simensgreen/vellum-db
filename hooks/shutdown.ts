@@ -1,11 +1,8 @@
-import type {
-  PluginHookFn,
-  PluginShutdownContext,
-} from "@vellumai/plugin-api";
-import { closeDatabase } from "../src/db.ts";
+import type { PluginHookFn, PluginShutdownContext } from "@vellumai/plugin-api"
+import { closeDatabase } from "../src/db.ts"
 
 const shutdown: PluginHookFn<PluginShutdownContext> = async (_ctx) => {
-  closeDatabase();
-};
+    closeDatabase()
+}
 
-export default shutdown;
+export default shutdown

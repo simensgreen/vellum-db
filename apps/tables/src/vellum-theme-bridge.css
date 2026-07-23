@@ -1,84 +1,84 @@
 /* Align sandbox --v-* tokens with @vellumai/design-library Figma palette. */
 
 :root {
-  --v-primary-base: #17191c;
-  --v-primary-hover: #24292e;
-  --v-primary-active: #2d3339;
-  --v-primary-disabled: #f6f5f4;
-  --v-surface-base: #f6f5f4;
-  --v-surface-overlay: #fdfdfc;
-  --v-surface-active: #f2f0ee;
-  --v-surface-lift: #ffffff;
-  --v-border-base: #f2f0ee;
-  --v-border-hover: #cfccc9;
-  --v-border-active: #2d3339;
-  --v-border-disabled: #e9e6e2;
-  --v-content-emphasized: #161616;
-  --v-content-default: #24292e;
-  --v-content-secondary: #5a6672;
-  --v-content-tertiary: #71808e;
-  --v-content-disabled: #cfccc9;
-  --v-content-inset: #fdfdfc;
-  --v-bg: #f6f5f4;
-  --v-surface: #f6f5f4;
-  --v-surface-border: #f2f0ee;
-  --v-text: #24292e;
-  --v-text-secondary: #5a6672;
-  --v-text-muted: #71808e;
-  --v-accent: #17191c;
-  --v-accent-hover: #24292e;
-  --v-shadow-sm: 0 1px 3px rgb(0 0 0 / 0.1);
-  --v-shadow-md: 0 4px 12px rgb(0 0 0 / 0.1);
-  /* Billing usage trend chart (usage-trend-chart.tsx STACK_COLORS) */
-  --v-usage-trend-positive: #10b981;
-  --v-usage-trend-info: #3b82f6;
-  --v-usage-trend-mid: #f59e0b;
-  --v-usage-trend-negative: #f87171;
-  --v-usage-trend-tertiary: #9ca3af;
+    --v-primary-base: #17191c;
+    --v-primary-hover: #24292e;
+    --v-primary-active: #2d3339;
+    --v-primary-disabled: #f6f5f4;
+    --v-surface-base: #f6f5f4;
+    --v-surface-overlay: #fdfdfc;
+    --v-surface-active: #f2f0ee;
+    --v-surface-lift: #ffffff;
+    --v-border-base: #f2f0ee;
+    --v-border-hover: #cfccc9;
+    --v-border-active: #2d3339;
+    --v-border-disabled: #e9e6e2;
+    --v-content-emphasized: #161616;
+    --v-content-default: #24292e;
+    --v-content-secondary: #5a6672;
+    --v-content-tertiary: #71808e;
+    --v-content-disabled: #cfccc9;
+    --v-content-inset: #fdfdfc;
+    --v-bg: #f6f5f4;
+    --v-surface: #f6f5f4;
+    --v-surface-border: #f2f0ee;
+    --v-text: #24292e;
+    --v-text-secondary: #5a6672;
+    --v-text-muted: #71808e;
+    --v-accent: #17191c;
+    --v-accent-hover: #24292e;
+    --v-shadow-sm: 0 1px 3px rgb(0 0 0 / 0.1);
+    --v-shadow-md: 0 4px 12px rgb(0 0 0 / 0.1);
+    /* Billing usage trend chart (usage-trend-chart.tsx STACK_COLORS) */
+    --v-usage-trend-positive: #10b981;
+    --v-usage-trend-info: #3b82f6;
+    --v-usage-trend-mid: #f59e0b;
+    --v-usage-trend-negative: #f87171;
+    --v-usage-trend-tertiary: #9ca3af;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --v-primary-base: #fdfdfc;
-    --v-primary-hover: #f2f0ee;
-    --v-primary-active: #e9e6e2;
-    --v-primary-disabled: #2d3339;
-    --v-surface-base: #17191c;
-    --v-surface-overlay: #1c2024;
-    --v-surface-active: #444d56;
-    --v-surface-lift: #24292e;
-    --v-border-base: #24292e;
-    --v-border-hover: #2d3339;
-    --v-border-active: #f6f5f4;
-    --v-border-disabled: #1c2024;
-    --v-content-emphasized: #fdfdfc;
-    --v-content-default: #f6f5f4;
-    --v-content-secondary: #a9b2bb;
-    --v-content-tertiary: #8d99a5;
-    --v-content-disabled: #5a6672;
-    --v-content-inset: #17191c;
-    --v-bg: #17191c;
-    --v-surface: #17191c;
-    --v-surface-border: #24292e;
-    --v-text: #f6f5f4;
-    --v-text-secondary: #a9b2bb;
-    --v-text-muted: #8d99a5;
-    --v-accent: #fdfdfc;
-    --v-accent-hover: #f2f0ee;
-    --v-shadow-sm: 0 1px 3px rgb(0 0 0 / 0.25);
-    --v-shadow-md: 0 4px 12px rgb(0 0 0 / 0.25);
-  }
+    :root {
+        --v-primary-base: #fdfdfc;
+        --v-primary-hover: #f2f0ee;
+        --v-primary-active: #e9e6e2;
+        --v-primary-disabled: #2d3339;
+        --v-surface-base: #17191c;
+        --v-surface-overlay: #1c2024;
+        --v-surface-active: #444d56;
+        --v-surface-lift: #24292e;
+        --v-border-base: #24292e;
+        --v-border-hover: #2d3339;
+        --v-border-active: #f6f5f4;
+        --v-border-disabled: #1c2024;
+        --v-content-emphasized: #fdfdfc;
+        --v-content-default: #f6f5f4;
+        --v-content-secondary: #a9b2bb;
+        --v-content-tertiary: #8d99a5;
+        --v-content-disabled: #5a6672;
+        --v-content-inset: #17191c;
+        --v-bg: #17191c;
+        --v-surface: #17191c;
+        --v-surface-border: #24292e;
+        --v-text: #f6f5f4;
+        --v-text-secondary: #a9b2bb;
+        --v-text-muted: #8d99a5;
+        --v-accent: #fdfdfc;
+        --v-accent-hover: #f2f0ee;
+        --v-shadow-sm: 0 1px 3px rgb(0 0 0 / 0.25);
+        --v-shadow-md: 0 4px 12px rgb(0 0 0 / 0.25);
+    }
 }
 
 /* design-library primary buttons use content-inset on primary-base fill. */
 .v-button {
-  color: var(--v-content-inset);
+    color: var(--v-content-inset);
 }
 
 .v-button.secondary {
-  color: var(--v-content-default);
+    color: var(--v-content-default);
 }
 
 .v-button.ghost {
-  color: var(--v-primary-base);
+    color: var(--v-primary-base);
 }

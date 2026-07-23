@@ -15,6 +15,7 @@ This repository root **is** the plugin (`package.json` + `hooks/` + `tools/` + `
 | Filters | `@truto/sqlite-builder` (`compileFilter`) |
 | File IO | `db_load` / `db_dump` (`csv` \| `json` \| `jsonl` \| `xlsx` via SheetJS `xlsx`) |
 | Tables app | Preact (`apps/tables/`) |
+| Lint / format | Biome (`biome.json`; `bun run lint`) |
 | Plugin contract | `@vellumai/plugin-api` peer `^0.8.0` (also `devDependency` for local `tsc`) |
 
 ## Layout
@@ -22,6 +23,7 @@ This repository root **is** the plugin (`package.json` + `hooks/` + `tools/` + `
 | Path | Role |
 | --- | --- |
 | `package.json` | Manifest: `name`, `version`, `peerDependencies["@vellumai/plugin-api"]`, `vellum: {}` |
+| `biome.json` | Lint + format config (Biome) |
 | `config.json` | User-editable config (host-preserved across upgrades) |
 | `data/` | Runtime DB (host-created; gitignored) — `InitContext.pluginStorageDir` |
 | `hooks/init.ts` | Open `bun:sqlite`, pragmas, meta DDL (idempotent) |
@@ -61,6 +63,11 @@ Meta table **`_stats`** (one row per UTC day): snapshots (`table_count`, `row_co
 
 ```bash
 bun install
+bun run lint          # Biome: format + lint (errors fail)
+bun run lint:fix      # auto-fix safe + organize imports
+bun run format        # format only
+bun run typecheck     # tsc root + apps/tables
+bun run check         # lint + test (CI parity)
 bunx tsc --noEmit
 bunx tsc --noEmit -p apps/tables
 bun test
@@ -70,10 +77,11 @@ bun run dev:app   # Tables app UI: http://localhost:5173 (temp SQLite + route pr
 
 `bun run dev:app` serves the Database app with hot reload, mock `window.vellum.fetch`, and the same REST handlers as production (`/v1/x/plugins/vellum-db/...`). Card preview UI: `http://localhost:5173/?preview=1`.
 
-`bun install` sets local `core.hooksPath` to `.githooks`. Pre-commit runs `bun run openapi` and stages `openapi.json` when the commit includes changes under `routes/`, `src/api/`, or `src/openapi/`.
+`bun install` sets local `core.hooksPath` to `.githooks`. Pre-commit runs Biome on staged source files and regenerates `openapi.json` when the commit includes changes under `routes/`, `src/api/`, or `src/openapi/`.
 
 ## Always
 
+- TypeScript: prefer optional fields (`field?: T`) and `undefined` for absence; absorb JSON/SQL `null` at parse boundaries only.
 - Persist only under plugin `data/` (`pluginStorageDir` from `init`).
 - Validate table definitions and rows with Ajv (`src/core/table/` DSL + compiled row schemas).
 - Prefer JSON tools over `db_sql` for routine work.

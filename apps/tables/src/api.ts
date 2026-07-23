@@ -1,339 +1,318 @@
-import type { TableDefinition } from "vellum-db/core/table/types";
-import { vellumFetch } from "./platform/bridge.ts";
+import type { TableDefinition } from "vellum-db/core/table/types"
+import { vellumFetch } from "./platform/bridge.ts"
 
-const API_PREFIX = "/v1/x/plugins/vellum-db";
+const API_PREFIX = "/v1/x/plugins/vellum-db"
 
 export type ColumnSpec = {
-  name: string;
-  sqlType: "TEXT" | "INTEGER" | "REAL";
-  notNull: boolean;
-  jsonStored: boolean;
-};
-
-export type TableSummary = {
-  name: string;
-  scope: string | null;
-  definition: TableDefinition;
-  columns: ColumnSpec[];
-  created_at: string;
-  updated_at: string;
-};
-
-export type TablesListResponse = {
-  tables: TableSummary[];
-  count: number;
-  limit: number;
-  offset: number;
-  has_more: boolean;
-};
-
-export type RowsResponse = {
-  table: string;
-  count: number;
-  total_count: number;
-  limit: number;
-  offset: number;
-  has_more: boolean;
-  rows: Record<string, unknown>[];
-};
-
-export type StatsGranularity = "day" | "week" | "month";
-
-export type StatsBucket = {
-  start: string;
-  inserts: number;
-  updates: number;
-  deletions: number;
-  reads: number;
-  total: number;
-  table_count: number;
-  row_count: number;
-  database_bytes: number;
-};
-
-export type DatabaseStatsResponse = {
-  summary: {
-    table_count: number;
-    row_count: number;
-    database_bytes: number;
-  };
-  retention_days: number;
-  granularity: StatsGranularity;
-  buckets: StatsBucket[];
-};
-
-export type ApiErrorBody = {
-  type: string;
-  msg?: string;
-  hint?: string;
-};
-
-async function readError(response: Response): Promise<string> {
-  const body = (await response.json().catch(() => ({}))) as ApiErrorBody;
-  if (typeof body.msg === "string" && body.msg.length > 0) {
-    if (typeof body.hint === "string" && body.hint.length > 0) {
-      return `${body.msg} (${body.hint})`;
-    }
-    return body.msg;
-  }
-  if (typeof body.type === "string") {
-    return body.type;
-  }
-  return `HTTP ${response.status}`;
+    name: string
+    sqlType: "TEXT" | "INTEGER" | "REAL"
+    notNull: boolean
+    jsonStored: boolean
 }
 
-export async function fetchTables(
-  offset = 0,
-  limit = 100,
-): Promise<TablesListResponse> {
-  const response = await vellumFetch(
-    `${API_PREFIX}/tables?limit=${limit}&offset=${offset}`,
-  );
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
-  return response.json() as Promise<TablesListResponse>;
+export type TableSummary = {
+    name: string
+    scope: string | null
+    definition: TableDefinition
+    columns: ColumnSpec[]
+    created_at: string
+    updated_at: string
+}
+
+export type TablesListResponse = {
+    tables: TableSummary[]
+    count: number
+    limit: number
+    offset: number
+    has_more: boolean
+}
+
+export type RowsResponse = {
+    table: string
+    count: number
+    total_count: number
+    limit: number
+    offset: number
+    has_more: boolean
+    rows: Record<string, unknown>[]
+}
+
+export type StatsGranularity = "day" | "week" | "month"
+
+export type StatsBucket = {
+    start: string
+    inserts: number
+    updates: number
+    deletions: number
+    reads: number
+    total: number
+    table_count: number
+    row_count: number
+    database_bytes: number
+}
+
+export type DatabaseStatsResponse = {
+    summary: {
+        table_count: number
+        row_count: number
+        database_bytes: number
+    }
+    retention_days: number
+    granularity: StatsGranularity
+    buckets: StatsBucket[]
+}
+
+export type ApiErrorBody = {
+    type: string
+    msg?: string
+    hint?: string
+}
+
+async function readError(response: Response): Promise<string> {
+    const body = (await response.json().catch(() => ({}))) as ApiErrorBody
+    if (typeof body.msg === "string" && body.msg.length > 0) {
+        if (typeof body.hint === "string" && body.hint.length > 0) {
+            return `${body.msg} (${body.hint})`
+        }
+        return body.msg
+    }
+    if (typeof body.type === "string") {
+        return body.type
+    }
+    return `HTTP ${response.status}`
+}
+
+export async function fetchTables(offset = 0, limit = 100): Promise<TablesListResponse> {
+    const response = await vellumFetch(`${API_PREFIX}/tables?limit=${limit}&offset=${offset}`)
+    if (!response.ok) {
+        throw new Error(await readError(response))
+    }
+    return response.json() as Promise<TablesListResponse>
 }
 
 export async function fetchRows(
-  tableName: string,
-  offset: number,
-  limit: number,
+    tableName: string,
+    offset: number,
+    limit: number
 ): Promise<RowsResponse> {
-  const response = await vellumFetch(
-    `${API_PREFIX}/rows?table=${encodeURIComponent(tableName)}&limit=${limit}&offset=${offset}`,
-  );
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
-  return response.json() as Promise<RowsResponse>;
+    const response = await vellumFetch(
+        `${API_PREFIX}/rows?table=${encodeURIComponent(tableName)}&limit=${limit}&offset=${offset}`
+    )
+    if (!response.ok) {
+        throw new Error(await readError(response))
+    }
+    return response.json() as Promise<RowsResponse>
 }
 
-export async function fetchStats(
-  granularity: StatsGranularity,
-): Promise<DatabaseStatsResponse> {
-  const response = await vellumFetch(
-    `${API_PREFIX}/stats?granularity=${encodeURIComponent(granularity)}`,
-  );
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
-  return response.json() as Promise<DatabaseStatsResponse>;
+export async function fetchStats(granularity: StatsGranularity): Promise<DatabaseStatsResponse> {
+    const response = await vellumFetch(
+        `${API_PREFIX}/stats?granularity=${encodeURIComponent(granularity)}`
+    )
+    if (!response.ok) {
+        throw new Error(await readError(response))
+    }
+    return response.json() as Promise<DatabaseStatsResponse>
 }
 
 export type RowCommitBody = {
-  insert?: Array<Record<string, unknown>>;
-  update?: Record<string, Record<string, unknown>>;
-  delete?: string[];
-};
-
-export type RowCommitResult = {
-  table: string;
-  updated: number;
-  inserted: number;
-  deleted: number;
-};
-
-export async function commitRows(
-  tableName: string,
-  body: RowCommitBody,
-): Promise<RowCommitResult> {
-  const response = await vellumFetch(
-    `${API_PREFIX}/rows/commit?table=${encodeURIComponent(tableName)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    },
-  );
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
-  return response.json() as Promise<RowCommitResult>;
+    insert?: Array<Record<string, unknown>>
+    update?: Record<string, Record<string, unknown>>
+    delete?: string[]
 }
 
-export type IoMode = "csv" | "json" | "jsonl" | "xlsx";
+export type RowCommitResult = {
+    table: string
+    updated: number
+    inserted: number
+    deleted: number
+}
+
+export async function commitRows(tableName: string, body: RowCommitBody): Promise<RowCommitResult> {
+    const response = await vellumFetch(
+        `${API_PREFIX}/rows/commit?table=${encodeURIComponent(tableName)}`,
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        }
+    )
+    if (!response.ok) {
+        throw new Error(await readError(response))
+    }
+    return response.json() as Promise<RowCommitResult>
+}
+
+export type IoMode = "csv" | "json" | "jsonl" | "xlsx"
 
 export type TableImportResult = {
-  table: string;
-  mode: IoMode;
-  on_conflict: "abort" | "ignore" | "replace";
-  inserted: number;
-  ignored: number;
-  replaced: number;
-};
+    table: string
+    mode: IoMode
+    on_conflict: "abort" | "ignore" | "replace"
+    inserted: number
+    ignored: number
+    replaced: number
+}
 
-function filenameFromContentDisposition(
-  header: string | null,
-  fallback: string,
-): string {
-  if (!header) {
-    return fallback;
-  }
-  const match = /filename="([^"]+)"/.exec(header);
-  return match?.[1] ?? fallback;
+function filenameFromContentDisposition(header: string | null, fallback: string): string {
+    if (!header) {
+        return fallback
+    }
+    const match = /filename="([^"]+)"/.exec(header)
+    return match?.[1] ?? fallback
 }
 
 export async function exportTableFile(
-  tableName: string,
-  mode: IoMode,
+    tableName: string,
+    mode: IoMode
 ): Promise<{ filename: string; blob: Blob }> {
-  const response = await vellumFetch(
-    `${API_PREFIX}/export?table=${encodeURIComponent(tableName)}&mode=${encodeURIComponent(mode)}`,
-  );
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
-  const filename = filenameFromContentDisposition(
-    response.headers.get("Content-Disposition"),
-    `${tableName}.${mode}`,
-  );
-  const blob = await response.blob();
-  return { filename, blob };
+    const response = await vellumFetch(
+        `${API_PREFIX}/export?table=${encodeURIComponent(tableName)}&mode=${encodeURIComponent(mode)}`
+    )
+    if (!response.ok) {
+        throw new Error(await readError(response))
+    }
+    const filename = filenameFromContentDisposition(
+        response.headers.get("Content-Disposition"),
+        `${tableName}.${mode}`
+    )
+    const blob = await response.blob()
+    return { filename, blob }
 }
 
 export async function importTableFile(
-  tableName: string,
-  file: File,
-  onConflict?: "abort" | "ignore" | "replace",
+    tableName: string,
+    file: File,
+    onConflict?: "abort" | "ignore" | "replace"
 ): Promise<TableImportResult> {
-  const params = new URLSearchParams({
-    table: tableName,
-    filename: file.name,
-  });
-  if (onConflict) {
-    params.set("on_conflict", onConflict);
-  }
-  const response = await vellumFetch(`${API_PREFIX}/import?${params}`, {
-    method: "POST",
-    body: file,
-  });
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
-  return response.json() as Promise<TableImportResult>;
+    const params = new URLSearchParams({
+        table: tableName,
+        filename: file.name
+    })
+    if (onConflict) {
+        params.set("on_conflict", onConflict)
+    }
+    const response = await vellumFetch(`${API_PREFIX}/import?${params}`, {
+        method: "POST",
+        body: file
+    })
+    if (!response.ok) {
+        throw new Error(await readError(response))
+    }
+    return response.json() as Promise<TableImportResult>
 }
 
 export async function createTable(input: {
-  definition: TableDefinition;
-  scope?: string;
+    definition: TableDefinition
+    scope?: string
 }): Promise<unknown> {
-  const params = new URLSearchParams();
-  if (input.scope) {
-    params.set("scope", input.scope);
-  }
-  const query = params.toString();
-  const response = await vellumFetch(
-    `${API_PREFIX}/tables${query ? `?${query}` : ""}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input.definition),
-    },
-  );
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
-  return response.json();
+    const params = new URLSearchParams()
+    if (input.scope) {
+        params.set("scope", input.scope)
+    }
+    const query = params.toString()
+    const response = await vellumFetch(`${API_PREFIX}/tables${query ? `?${query}` : ""}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input.definition)
+    })
+    if (!response.ok) {
+        throw new Error(await readError(response))
+    }
+    return response.json()
 }
 
 export async function alterTable(input: {
-  table: string;
-  add?: Array<{
-    name: string;
-    slug: string;
-    column: TableDefinition["columns"][number];
-  }>;
-  drop?: string[];
-  scope?: string | null;
+    table: string
+    add?: Array<{
+        name: string
+        slug: string
+        column: TableDefinition["columns"][number]
+    }>
+    drop?: string[]
+    scope?: string | null
 }): Promise<unknown> {
-  const params = new URLSearchParams({ table: input.table });
-  if (input.scope !== undefined) {
-    if (input.scope === null) {
-      params.set("scope", "");
-    } else {
-      params.set("scope", input.scope);
+    const params = new URLSearchParams({ table: input.table })
+    if (input.scope !== undefined) {
+        if (input.scope === null) {
+            params.set("scope", "")
+        } else {
+            params.set("scope", input.scope)
+        }
     }
-  }
-  const body: Record<string, unknown> = {};
-  if (input.add && input.add.length > 0) {
-    body.add = input.add;
-  }
-  if (input.drop && input.drop.length > 0) {
-    body.drop = input.drop;
-  }
-  const response = await vellumFetch(`${API_PREFIX}/tables/alter?${params}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
-  return response.json();
+    const body: Record<string, unknown> = {}
+    if (input.add && input.add.length > 0) {
+        body.add = input.add
+    }
+    if (input.drop && input.drop.length > 0) {
+        body.drop = input.drop
+    }
+    const response = await vellumFetch(`${API_PREFIX}/tables/alter?${params}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+    })
+    if (!response.ok) {
+        throw new Error(await readError(response))
+    }
+    return response.json()
 }
 
-export type ViewKind = "query" | "aggregate";
+export type ViewKind = "query" | "aggregate"
 
 export type ViewSummary = {
-  slug: string;
-  name: string;
-  kind: ViewKind;
-  scope: string | null;
-  description: string | null;
-  definition: Record<string, unknown>;
-  param_names: string[];
-  created_at: string;
-  updated_at: string;
-};
+    slug: string
+    name: string
+    kind: ViewKind
+    scope: string | null
+    description: string | null
+    definition: Record<string, unknown>
+    param_names: string[]
+    created_at: string
+    updated_at: string
+}
 
 export type ViewsListResponse = {
-  views: ViewSummary[];
-  count: number;
-  limit: number;
-  offset: number;
-  has_more: boolean;
-};
+    views: ViewSummary[]
+    count: number
+    limit: number
+    offset: number
+    has_more: boolean
+}
 
 export type ViewRunResponse = {
-  slug: string;
-  name: string;
-  kind: ViewKind;
-  result: {
-    table?: string;
-    count: number;
-    total_count?: number;
-    limit: number;
-    offset: number;
-    has_more: boolean;
-    rows: Record<string, unknown>[];
-  };
-};
+    slug: string
+    name: string
+    kind: ViewKind
+    result: {
+        table?: string
+        count: number
+        total_count?: number
+        limit: number
+        offset: number
+        has_more: boolean
+        rows: Record<string, unknown>[]
+    }
+}
 
-export async function fetchViews(
-  offset = 0,
-  limit = 100,
-): Promise<ViewsListResponse> {
-  const response = await vellumFetch(
-    `${API_PREFIX}/views?limit=${limit}&offset=${offset}`,
-  );
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
-  return response.json() as Promise<ViewsListResponse>;
+export async function fetchViews(offset = 0, limit = 100): Promise<ViewsListResponse> {
+    const response = await vellumFetch(`${API_PREFIX}/views?limit=${limit}&offset=${offset}`)
+    if (!response.ok) {
+        throw new Error(await readError(response))
+    }
+    return response.json() as Promise<ViewsListResponse>
 }
 
 export async function runView(
-  slug: string,
-  params?: Record<string, unknown>,
+    slug: string,
+    params?: Record<string, unknown>
 ): Promise<ViewRunResponse> {
-  const query = new URLSearchParams({ slug });
-  if (params && Object.keys(params).length > 0) {
-    query.set("params", JSON.stringify(params));
-  }
-  const response = await vellumFetch(`${API_PREFIX}/views/run?${query}`);
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
-  return response.json() as Promise<ViewRunResponse>;
+    const query = new URLSearchParams({ slug })
+    if (params && Object.keys(params).length > 0) {
+        query.set("params", JSON.stringify(params))
+    }
+    const response = await vellumFetch(`${API_PREFIX}/views/run?${query}`)
+    if (!response.ok) {
+        throw new Error(await readError(response))
+    }
+    return response.json() as Promise<ViewRunResponse>
 }

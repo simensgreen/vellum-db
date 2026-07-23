@@ -1,5 +1,5 @@
-import "./design-system.ts";
-import { render } from "preact";
-import { App } from "./components/App.tsx";
+import "./design-system.ts"
+import { render } from "preact"
+import { App } from "./components/App.tsx"
 
-render(<App />, document.getElementById("app")!);
+render(<App />, document.getElementById("app")!)

@@ -1,3 +1,2 @@
-export { z } from "zod";
-
-export type { ZodType, ZodError } from "zod";
+export type { ZodError, ZodType } from "zod"
+export { z } from "zod"
