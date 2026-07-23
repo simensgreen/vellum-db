@@ -16,9 +16,9 @@ const inputSchema = {
     },
     mode: {
       type: "string",
-      enum: ["csv", "json", "jsonl", "xls"],
+      enum: ["csv", "json", "jsonl", "xlsx"],
       description:
-        "File format. json = array of objects; jsonl = one object per line; csv = header row; xls = Excel workbook (.xlsx).",
+        "File format. json = array of objects; jsonl = one object per line; csv = header row; xlsx = Excel workbook.",
     },
   },
   required: ["table", "path", "mode"],
@@ -26,7 +26,7 @@ const inputSchema = {
 
 export default {
   description:
-    "Dump all rows from a table to a file (csv | json | jsonl | xls). Includes id. Procedure: skill_load { skill: \"vellum-db\" }.",
+    "Dump all rows from a table to a file (csv | json | jsonl | xlsx). Includes primary key columns. Procedure: skill_load { skill: \"vellum-db\" }.",
   defaultRiskLevel: "medium" as const,
   category: "data",
   input_schema: inputSchema,

@@ -1,6 +1,6 @@
 # vellum-db
 
-Vellum plugin: structured storage for agents (JSON Schema tables, JSON query/aggregate, named saved queries).
+Vellum plugin: structured storage for agents (TableDefinition DSL tables, JSON query/aggregate, named saved queries).
 
 ## Scope
 
@@ -13,7 +13,7 @@ This repository root **is** the plugin (`package.json` + `hooks/` + `tools/` + `
 | DB | `bun:sqlite` (Vellum Bun runtime); file under `pluginStorageDir` (`<pluginDir>/data/` for user plugins) |
 | Validation | Ajv (table schemas + rows + tool inputs) |
 | Filters | `@truto/sqlite-builder` (`compileFilter`) |
-| File IO | `db_load` / `db_dump` (`csv` \| `json` \| `jsonl` \| `xls` via SheetJS `xlsx`) |
+| File IO | `db_load` / `db_dump` (`csv` \| `json` \| `jsonl` \| `xlsx` via SheetJS `xlsx`) |
 | Tables app | Preact (`apps/tables/`) |
 | Plugin contract | `@vellumai/plugin-api` peer `^0.8.0` (also `devDependency` for local `tsc`) |
 
@@ -52,6 +52,9 @@ Data is **workspace-global** (not per-conversation), so there is no `conversatio
 | `rawSqlMode` | `select-only` — guarded SELECT only; `on` — any single statement; `off` — `db_sql` disabled |
 | `databasePath` | `null`/omit → `pluginStorageDir/vellum-db.sqlite`; relative → under `pluginStorageDir`; absolute → that file |
 | `allowDropTable` | `false` (default) — `db_drop_table` rejects; `true` — allow DROP TABLE + delete `_tables` row |
+| `statsRetentionDays` | Days of `_stats` daily history to keep (UTC epoch days). Default **30** when omitted. |
+
+Meta table **`_stats`** (one row per UTC day): snapshots (`table_count`, `row_count`, `database_bytes`) plus daily op counters (`inserts`, `updates`, `deletions`, `reads`). Updated from `src/core/stats-store.ts` on row ops and DDL. Overview UI reads **`GET /stats`** (`granularity`: `day` \| `week` \| `month`).
 
 ## Commands
 
@@ -71,13 +74,17 @@ bun run dev:app   # Tables app UI: http://localhost:5173 (temp SQLite + route pr
 ## Always
 
 - Persist only under plugin `data/` (`pluginStorageDir` from `init`).
-- Validate agent table schemas and rows with Ajv.
+- Validate table definitions and rows with Ajv (`src/core/table/` DSL + compiled row schemas).
 - Prefer JSON tools over `db_sql` for routine work.
 - Tool `input_schema` MUST NOT set `additionalProperties: false` at the tool-input root (or anywhere that rejects host-injected fields). Vellum injects `activity` into tool calls; rejecting unknown properties breaks every invocation.
 - List tools that can return many rows use `limit`/`offset` and return `has_more`.
 - Optional table `scope` (`[a-z][a-z0-9_]*`) filters `db_list_tables`; set on create/alter.
-- `db_load` / `db_dump`: relative `path` under the Vellum workspace; paths must stay inside the workspace.
-- Row `id` is a nanoid string (`TEXT PRIMARY KEY`), generated on insert when omitted.
+- `db_load` / `db_dump`: relative `path` under the Vellum workspace; `mode` is `csv` | `json` | `jsonl` | `xlsx`.
+- REST file IO (Database app): `GET /export?table=&mode=` (download); `POST /import?table=&filename=` (raw body; format from filename or `mode` query).
+- REST batch row commit (Database app): `POST /rows/commit?table=` body `{ insert?, update?, delete? }`.
+- Create tables with **TableDefinition DSL** only (`POST /tables`, `db_create_table`). Canonical blob: `_tables.definition_json`; `schema_json` is compiled row validator cache.
+- Table `primaryKey` on columns replaces table-level `pk` and implicit `id`: set `primaryKey: true` on one or more columns (e.g. `nanoid` + `default: "random"`).
+- `db_insert` / `db_load` support `on_conflict`: `abort` | `ignore` | `replace` — conflict on primary key columns only.
 - **Core** owns mutation invalidation via `src/core/sync.ts` + `src/core/sync-tags.ts` (not routes, not tools).
 - Vellum app bundler rejects imports outside `apps/<name>/` (`validateImportPaths` in vellum-assistant `app-compiler.ts`). Mirror `src/core/sync-tags.ts` byte-identical to `apps/tables/src/sync-tags.ts`; `tests/sync-tags-parity.test.ts` enforces this.
 - Database app display name is **Database** (UI title/header only; app id stays `plugins~vellum-db~tables`). Use host `--v-*` tokens and `.v-*` classes; layout-only CSS in `apps/tables/src/styles.css`. Vendored sandbox CSS: `apps/tables/vendor/vellum-design-system.css`; Figma palette bridge: `apps/tables/src/vellum-theme-bridge.css` (matches `@vellumai/design-library` tokens).

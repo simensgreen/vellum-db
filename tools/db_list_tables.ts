@@ -24,7 +24,7 @@ const inputSchema = {
 
 export default {
   description:
-    "List structured tables with optional scope/name_prefix filters and limit/offset pagination. Procedures: skill_load { skill: \"vellum-db\" } or { skill: \"vellum-db-meta\" }.",
+    "List structured tables with optional scope/name_prefix filters and limit/offset pagination. Each entry includes name, scope, TableDefinition, and column slugs. Procedures: skill_load { skill: \"vellum-db\" } or { skill: \"vellum-db-meta\" }.",
   defaultRiskLevel: "low" as const,
   category: "data",
   input_schema: inputSchema,

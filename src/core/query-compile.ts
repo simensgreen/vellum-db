@@ -126,6 +126,26 @@ export function compileSelectQuery(definition: QueryDefinition): {
   return { text, values, limit, offset };
 }
 
+export function compileCountQuery(definition: Pick<QueryDefinition, "table" | "filter">): {
+  text: string;
+  values: unknown[];
+} {
+  const table = requireTable(definition.table);
+  const fromIdent = sql.ident(table.name);
+
+  let query = sql`SELECT COUNT(*) AS total FROM ${fromIdent}`;
+  const values: unknown[] = [...query.values];
+  let text = query.text;
+
+  if (definition.filter && Object.keys(definition.filter).length > 0) {
+    const filterResult = compileFilter(definition.filter);
+    text += ` WHERE ${filterResult.text}`;
+    values.push(...filterResult.values);
+  }
+
+  return { text, values };
+}
+
 const AGGREGATE_FNS = new Set(["count", "sum", "avg", "min", "max"]);
 
 export function compileAggregateQuery(definition: AggregateDefinition): {

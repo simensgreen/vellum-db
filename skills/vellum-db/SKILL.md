@@ -3,7 +3,7 @@ name: vellum-db
 description: >-
   Query and analyze structured data with JSON filters, aggregates, and saved
   queries. Triggers: db_query, db_aggregate, filter JSON, saved query,
-  db_run_saved_query, db_sql, db_load, db_dump, import csv, export json,
+  db_run_saved_query, db_sql, db_load, db_dump, import csv, export xlsx,
   list tables, count rows, group by.
 metadata:
   vellum:
@@ -12,7 +12,7 @@ metadata:
       - "User asks to query or filter rows in a structured table"
       - "User asks to aggregate, count, sum, or group stored data"
       - "User asks to save, run, or list a named saved query"
-      - "User asks to import or export table data (csv, json, jsonl, excel)"
+      - "User asks to import or export table data (csv, json, jsonl, xlsx)"
       - "User needs raw SQL only when JSON tools cannot express the need"
     avoid-when:
       - "User wants to create, alter, or drop tables — load vellum-db-meta instead"
@@ -44,11 +44,11 @@ Load with `skill_load` and `{ "skill": "vellum-db" }`. Prefer JSON tools over SQ
 
 ## Overview
 
-The vellum-db plugin stores agent data in JSON Schema tables. This skill covers **reading and analyzing** that data: list tables, query rows with JSON filters, aggregate metrics, manage saved queries, and use `db_sql` as a last resort. Row writes (`db_insert`, `db_update`, `db_delete`) are included when they support analysis workflows (seed sample data, fix bad rows, prune stale records). Results respect `config.maxRowsPerQuery`. Raw SQL behavior follows `config.rawSqlMode` (`select-only`, `on`, or `off`). Row `id` is a nanoid string.
+The vellum-db plugin stores agent data in **TableDefinition** tables (column slugs, explicit primary keys). This skill covers **reading and analyzing** that data: list tables, query rows with JSON filters, aggregate metrics, manage saved queries, and use `db_sql` as a last resort. Row writes (`db_insert`, `db_update`, `db_delete`) are included when they support analysis workflows (seed sample data, fix bad rows, prune stale records). Results respect `config.maxRowsPerQuery`. Raw SQL behavior follows `config.rawSqlMode` (`select-only`, `on`, or `off`). Row objects use column **slugs** as keys; primary keys are declared on columns (often `nanoid` with `default: "random"`), not an implicit `id`.
 
 ## Workflow
 
-1. **Discover** — call `db_list_tables` (optional `scope`, `name_prefix`, `limit`, `offset`). Read `name`, `scope`, `schema`, and columns before querying. Details: [references/db_list_tables.md](references/db_list_tables.md).
+1. **Discover** — call `db_list_tables` (optional `scope`, `name_prefix`, `limit`, `offset`). Read `name`, `scope`, `definition`, and `columns` (slugs) before querying. Details: [references/db_list_tables.md](references/db_list_tables.md).
 2. **Choose read tool** — `db_query` for row-level reads; `db_aggregate` for metrics and `group_by`. Both support `limit`/`offset` and return `has_more`. Details: [references/db_query.md](references/db_query.md), [references/db_aggregate.md](references/db_aggregate.md).
 3. **Prepare data if needed** — `db_insert` to add rows; `db_update` / `db_delete` with a **non-empty** JSON `filter`. Details: [references/db_insert.md](references/db_insert.md), [references/db_update.md](references/db_update.md), [references/db_delete.md](references/db_delete.md).
 4. **Repeat analysis** — `db_save_query` once, then `db_run_saved_query` with `params`. Details: [references/db_save_query.md](references/db_save_query.md), [references/db_run_saved_query.md](references/db_run_saved_query.md).
@@ -114,7 +114,7 @@ Never pass multiple statements (no semicolons). Details and examples: [reference
 }
 ```
 
-Call `db_query` with the JSON above. Expect `{ "table", "count", "limit", "offset", "has_more", "rows" }` where each row matches the table schema plus nanoid `id`. More shapes: [references/db_query.md](references/db_query.md).
+Call `db_query` with the JSON above. Expect `{ "table", "count", "limit", "offset", "has_more", "rows" }` where each row is keyed by column slug (including primary key column(s)). More shapes: [references/db_query.md](references/db_query.md).
 
 ### Example 2
 
@@ -148,7 +148,7 @@ Call `db_query` with the JSON above. Expect `{ "table", "count", "limit", "offse
 
 ## Common pitfalls
 
-- Querying before `db_list_tables` — column names come from the table schema, not guesses. Prefer `scope` when many tables exist.
+- Querying before `db_list_tables` — column slugs come from `definition` / `columns`, not guesses. Prefer `scope` when many tables exist.
 - Ignoring `has_more` — bump `offset` by `limit` and re-query until `has_more` is false.
 - Using SQL strings in `db_query` / `db_aggregate` — pass JSON filters only.
 - Empty `filter` on `db_update` or `db_delete` — rejected to prevent wiping a whole table.

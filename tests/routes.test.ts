@@ -8,6 +8,7 @@ import {
   openDatabase,
   parseConfig,
 } from "../src/db.ts";
+import { tasksDefinition } from "./fixtures/table-definitions.ts";
 import { GET as listTables } from "../routes/tables.ts";
 import { GET as queryRows } from "../routes/rows.ts";
 import { DELETE as dropTableRoute } from "../routes/tables/drop.ts";
@@ -44,26 +45,22 @@ describe("routes", () => {
   test("POST /tables creates table; GET /rows returns rows", async () => {
     const dir = withTempDb();
     try {
-      const schema = {
-        type: "object",
-        properties: { title: { type: "string" } },
-        required: ["title"],
-      };
       const createResponse = await createTableRoute(
-        new Request(`http://local/tables?name=tasks`, {
+        new Request("http://local/tables", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(schema),
+          body: JSON.stringify(tasksDefinition),
         }),
       );
       expect(createResponse.status).toBe(200);
 
       const listResponse = await listTables(new Request("http://local/tables"));
       const listBody = (await listResponse.json()) as {
-        tables: Array<{ name: string }>;
+        tables: Array<{ name: string; definition: { slug: string } }>;
       };
       expect(listBody.tables).toHaveLength(1);
       expect(listBody.tables[0]!.name).toBe("tasks");
+      expect(listBody.tables[0]!.definition.slug).toBe("tasks");
 
       const rowsResponse = await queryRows(
         new Request("http://local/rows?table=tasks&limit=10&offset=0"),
@@ -75,6 +72,30 @@ describe("routes", () => {
       };
       expect(rowsBody.table).toBe("tasks");
       expect(rowsBody.rows).toEqual([]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("POST /tables returns structured error for invalid body", async () => {
+    const dir = withTempDb();
+    try {
+      const response = await createTableRoute(
+        new Request("http://local/tables", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug: "bad", columns: [] }),
+        }),
+      );
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as {
+        type: string;
+        msg?: string;
+        hint?: string;
+      };
+      expect(body.type).toBeTruthy();
+      expect(body.msg ?? body.hint).toBeTruthy();
+      expect("error" in body).toBe(false);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -99,8 +120,9 @@ describe("routes", () => {
     try {
       const response = await queryRows(new Request("http://local/rows"));
       expect(response.status).toBe(400);
-      const body = (await response.json()) as { error: string };
-      expect(body.error).toContain("table");
+      const body = (await response.json()) as { type: string; msg?: string };
+      expect(body.type).toBe("validation_error");
+      expect(body.msg).toContain("table");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

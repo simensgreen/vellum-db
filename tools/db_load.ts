@@ -23,9 +23,9 @@ const inputSchema = {
     },
     mode: {
       type: "string",
-      enum: ["csv", "json", "jsonl", "xls"],
+      enum: ["csv", "json", "jsonl", "xlsx"],
       description:
-        "File format. json = array of objects; jsonl = one object per line; csv = header row; xls = Excel workbook (.xlsx).",
+        "File format. json = array of objects; jsonl = one object per line; csv = header row; xlsx = Excel workbook.",
     },
     on_conflict: onConflictInputSchema,
   },
@@ -34,7 +34,7 @@ const inputSchema = {
 
 export default {
   description:
-    'Load rows from a file into a table (csv | json | jsonl | xls). Optional on_conflict: abort | ignore | replace (by id). Procedure: skill_load { skill: "vellum-db" }.',
+    'Load rows from a file into a table (csv | json | jsonl | xlsx). Optional on_conflict: abort | ignore | replace (by primary key). Procedure: skill_load { skill: "vellum-db" }.',
   defaultRiskLevel: "medium" as const,
   category: "data",
   input_schema: inputSchema,

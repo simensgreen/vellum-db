@@ -35,7 +35,7 @@ const inputSchema = {
     columns: {
       type: "array",
       items: { type: "string" },
-      description: "Columns to return (default: all including id)",
+      description: "Column slugs to return (default: all columns)",
     },
   },
   required: ["table"],

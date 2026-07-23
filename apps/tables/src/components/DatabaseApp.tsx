@@ -15,9 +15,10 @@ import {
 import { AppShell } from "./AppShell.tsx";
 import { CreateTableForm } from "./CreateTableForm.tsx";
 import { EditTableForm } from "./EditTableForm.tsx";
-import { PAGE_SIZE } from "./RowsGrid.tsx";
+import { DEFAULT_ROW_LIMIT } from "./RowsGrid.tsx";
 import { TableDetailView } from "./TableDetailView.tsx";
 import { TableListPanel } from "./TableListPanel.tsx";
+import { DashboardView } from "./DashboardView.tsx";
 
 type MainView = "rows" | "create" | "edit";
 
@@ -26,10 +27,12 @@ export function DatabaseApp() {
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [rowsState, setRowsState] = useState<RowsResponse | null>(null);
   const [rowOffset, setRowOffset] = useState(0);
+  const [rowLimit, setRowLimit] = useState(DEFAULT_ROW_LIMIT);
   const [listError, setListError] = useState<string | null>(null);
   const [rowsError, setRowsError] = useState<string | null>(null);
   const [listLoading, setListLoading] = useState(true);
   const [mainView, setMainView] = useState<MainView>("rows");
+  const [statsRefreshKey, setStatsRefreshKey] = useState(0);
 
   const selectedSummary =
     tables.find((table) => table.name === selectedTable) ?? null;
@@ -40,16 +43,16 @@ export function DatabaseApp() {
     try {
       const response = await fetchTables();
       setTables(response.tables);
-      if (response.tables.length > 0) {
-        setSelectedTable((current) => {
-          if (current && response.tables.some((table) => table.name === current)) {
-            return current;
-          }
-          return response.tables[0]!.name;
-        });
-      } else {
-        setSelectedTable(null);
-      }
+      setSelectedTable((current) => {
+        if (!current) {
+          return null;
+        }
+        if (response.tables.some((table) => table.name === current)) {
+          return current;
+        }
+        return null;
+      });
+      setStatsRefreshKey((key) => key + 1);
     } catch (error) {
       setListError(error instanceof Error ? error.message : "Failed to load tables");
     } finally {
@@ -57,16 +60,21 @@ export function DatabaseApp() {
     }
   }, []);
 
-  const loadRows = useCallback(async (tableName: string, offset: number) => {
-    setRowsError(null);
-    setRowsState(null);
-    try {
-      const response = await fetchRows(tableName, offset, PAGE_SIZE);
-      setRowsState(response);
-    } catch (error) {
-      setRowsError(error instanceof Error ? error.message : "Failed to load rows");
-    }
-  }, []);
+  const loadRows = useCallback(
+    async (tableName: string, offset: number, limit: number) => {
+      setRowsError(null);
+      setRowsState(null);
+      try {
+        const response = await fetchRows(tableName, offset, limit);
+        setRowsState(response);
+      } catch (error) {
+        setRowsError(
+          error instanceof Error ? error.message : "Failed to load rows",
+        );
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     void loadTables();
@@ -76,8 +84,8 @@ export function DatabaseApp() {
     if (!selectedTable || mainView !== "rows") {
       return;
     }
-    void loadRows(selectedTable, rowOffset);
-  }, [selectedTable, rowOffset, loadRows, mainView]);
+    void loadRows(selectedTable, rowOffset, rowLimit);
+  }, [selectedTable, rowOffset, rowLimit, loadRows, mainView]);
 
   useEffect(() => {
     const unsubscribeList = vellumSubscribe(
@@ -105,12 +113,17 @@ export function DatabaseApp() {
           void loadTables();
         }
         if (rowTableNames.includes(selectedTable)) {
-          void loadRows(selectedTable, rowOffset);
+          void loadRows(selectedTable, rowOffset, rowLimit);
         }
       },
     );
     return unsubscribeRows ?? undefined;
-  }, [selectedTable, rowOffset, loadTables, loadRows]);
+  }, [selectedTable, rowOffset, rowLimit, loadTables, loadRows]);
+
+  function handleSelectOverview(): void {
+    setSelectedTable(null);
+    setMainView("rows");
+  }
 
   function handleSelectTable(tableName: string): void {
     setSelectedTable(tableName);
@@ -130,15 +143,21 @@ export function DatabaseApp() {
     void loadTables().then(() => {
       setMainView("rows");
       if (selectedTable) {
-        void loadRows(selectedTable, rowOffset);
+        void loadRows(selectedTable, rowOffset, rowLimit);
       }
     });
+  }
+
+  function handleLimitChange(limit: number): void {
+    setRowLimit(limit);
+    setRowOffset(0);
   }
 
   let mainContent;
   if (mainView === "create") {
     mainContent = (
       <CreateTableForm
+        existingTables={tables}
         onCancel={() => setMainView("rows")}
         onCreated={handleTableCreated}
       />
@@ -152,17 +171,28 @@ export function DatabaseApp() {
       />
     );
   } else if (!selectedTable) {
-    mainContent = <div class="v-empty-state">Select a table to view rows.</div>;
-  } else {
     mainContent = (
-      <TableDetailView
-        tableName={selectedTable}
-        rowsState={rowsState}
-        rowsError={rowsError}
-        onPageChange={setRowOffset}
-        onEditSchema={() => setMainView("edit")}
+      <DashboardView
+        onNewTable={() => setMainView("create")}
+        refreshKey={statsRefreshKey}
       />
     );
+  } else if (selectedSummary) {
+    mainContent = (
+      <TableDetailView
+        table={selectedSummary}
+        rowsState={rowsState}
+        rowsError={rowsError}
+        rowLimit={rowLimit}
+        onOffsetChange={setRowOffset}
+        onLimitChange={handleLimitChange}
+        onApplySuccess={() => {
+          void loadRows(selectedTable, rowOffset, rowLimit);
+        }}
+      />
+    );
+  } else {
+    mainContent = <div class="v-empty-state">Loading table…</div>;
   }
 
   return (
@@ -170,9 +200,11 @@ export function DatabaseApp() {
       sidebar={
         <TableListPanel
           tables={tables}
-          selectedTable={selectedTable}
+          selectedTable={mainView === "create" ? null : selectedTable}
+          overviewSelected={mainView === "rows" && selectedTable === null}
           listLoading={listLoading}
           listError={listError}
+          onSelectOverview={handleSelectOverview}
           onSelectTable={handleSelectTable}
           onNewTable={() => setMainView("create")}
         />

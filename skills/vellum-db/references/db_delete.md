@@ -6,8 +6,8 @@ Delete rows matching a JSON filter. Filter MUST be a non-empty object (empty fil
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `table` | yes | Table name |
-| `filter` | yes | Non-empty JSON filter |
+| `table` | yes | Table name (slug) |
+| `filter` | yes | Non-empty JSON filter (column slugs) |
 
 ## Output
 
@@ -15,21 +15,21 @@ Delete rows matching a JSON filter. Filter MUST be a non-empty object (empty fil
 
 ## Examples
 
-**Example excerpt** — delete archived rows:
+**Example excerpt** — delete by status:
 
 ```json
 {
   "table": "tasks",
-  "filter": { "status": "archived" }
+  "filter": { "status": 2 }
 }
 ```
 
-**Example excerpt** — delete one row by id:
+**Example excerpt** — delete one row by primary key:
 
 ```json
 {
   "table": "tasks",
-  "filter": { "id": "V1StGXR8_Z5jdHi6B-myT" }
+  "filter": { "task_id": "V1StGXR8_Z5jdHi6B-myT" }
 }
 ```
 
@@ -42,4 +42,4 @@ Delete rows matching a JSON filter. Filter MUST be a non-empty object (empty fil
 }
 ```
 
-Filter shapes are the same JSON filters as `db_query` (equality, operators, `and`/`or`).
+Filter shapes are the same JSON filters as `db_query`. Single-PK tables may accept `"id"` as an alias for the PK slug.

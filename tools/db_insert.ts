@@ -16,7 +16,7 @@ const inputSchema = {
     row: {
       type: "object",
       description:
-        "Row object matching the table JSON Schema. Optional nanoid string id for conflict handling; generated if omitted.",
+        "Row object matching the table row schema. Primary key columns optional when defaults apply (e.g. nanoid).",
     },
     on_conflict: onConflictInputSchema,
   },
@@ -25,7 +25,7 @@ const inputSchema = {
 
 export default {
   description:
-    'Insert a row into a structured table. Optional on_conflict: abort (default) | ignore | replace (by primary key id). Procedure: skill_load { skill: "vellum-db" }.',
+    'Insert a row into a structured table. Row keys are column slugs. Primary key columns optional when defaults apply (e.g. nanoid). Optional on_conflict: abort (default) | ignore | replace (by primary key). Procedure: skill_load { skill: "vellum-db" }.',
   defaultRiskLevel: "medium" as const,
   category: "data",
   input_schema: inputSchema,

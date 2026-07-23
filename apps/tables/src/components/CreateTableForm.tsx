@@ -1,120 +1,197 @@
-import { useCallback, useEffect, useState } from "preact/hooks";
-import { createTable } from "../api.ts";
+import { useLayoutEffect, useRef, useState } from "preact/hooks";
+import type { TableDefinition } from "vellum-db/core/table/types";
+import { createTable, type TableSummary } from "../api.ts";
+import { ColumnCardEditor } from "./ColumnCardEditor.tsx";
+import { FormFieldLabel } from "./FormFieldLabel.tsx";
 import {
   emptyVisualColumn,
-  jsonSchemaToVisual,
-  parseJsonSchemaText,
+  emptyVisualTable,
+  ensurePrimaryKeyColumn,
+  markSlugDirty,
+  refTargetsFromDefinitions,
+  syncSlugFromName,
+  syncVisualColumnSlug,
   validateScope,
-  validateTableName,
-  visualToJsonSchema,
+  validateSlug,
+  validateVisualTable,
+  type RefTarget,
   type VisualColumn,
-  type VisualColumnType,
-} from "../schema-editor/index.ts";
-
-type TabId = "visual" | "advanced";
-
-const COLUMN_TYPES: VisualColumnType[] = [
-  "string",
-  "integer",
-  "number",
-  "boolean",
-];
+  type VisualTable,
+} from "../table-definition-editor/index.ts";
 
 export function CreateTableForm({
+  existingTables,
   onCancel,
   onCreated,
 }: {
+  existingTables: TableSummary[];
   onCancel: () => void;
   onCreated: (tableName: string) => void;
 }) {
-  const [name, setName] = useState("");
-  const [scope, setScope] = useState("");
-  const [tab, setTab] = useState<TabId>("visual");
-  const [columns, setColumns] = useState<VisualColumn[]>([emptyVisualColumn()]);
-  const [advancedText, setAdvancedText] = useState(
-    JSON.stringify(visualToJsonSchema([emptyVisualColumn()]), null, 2),
+  const refTargets: RefTarget[] = refTargetsFromDefinitions(
+    existingTables.map((table) => table.definition),
+  );
+  const knownTables = new Map<string, TableDefinition>(
+    existingTables.map((table) => [table.name, table.definition]),
+  );
+
+
+  const [visual, setVisual] = useState<VisualTable>(emptyVisualTable());
+  const [draftColumn, setDraftColumn] = useState<VisualColumn>(() =>
+    emptyVisualColumn(),
   );
   const [error, setError] = useState<string | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const columnNameRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const focusAfterRender = useRef<{ index: number; cursor: number } | null>(null);
 
-  const syncAdvancedFromVisual = useCallback((nextColumns: VisualColumn[]) => {
-    setAdvancedText(JSON.stringify(visualToJsonSchema(nextColumns), null, 2));
-  }, []);
-
-  useEffect(() => {
-    if (tab === "visual") {
-      syncAdvancedFromVisual(columns);
+  useLayoutEffect(() => {
+    const pending = focusAfterRender.current;
+    if (pending === null) {
+      return;
     }
-  }, [tab, columns, syncAdvancedFromVisual]);
+    focusAfterRender.current = null;
+    const input = columnNameRefs.current[pending.index];
+    if (input === null || input === undefined) {
+      return;
+    }
+    input.focus();
+    input.setSelectionRange(pending.cursor, pending.cursor);
+  });
+
+  function updateVisual(patch: Partial<VisualTable>): void {
+    setVisual((current) => ({ ...current, ...patch }));
+  }
+
+  function handleNameChange(name: string): void {
+    const slugSync = syncSlugFromName(name, visual.slugDirty, visual.slug);
+    updateVisual({ name, ...slugSync });
+  }
+
+  function handleSlugChange(slug: string): void {
+    updateVisual(markSlugDirty(slug));
+  }
+
+  function mergeColumnPatch(
+    column: VisualColumn,
+    patch: Partial<VisualColumn>,
+  ): VisualColumn {
+    const merged = { ...column, ...patch };
+    if (column.systemId) {
+      merged.primaryKey = true;
+      merged.unique = true;
+      merged.nullable = false;
+    }
+    if (patch.primaryKey === true) {
+      merged.nullable = false;
+    }
+    if (patch.name !== undefined && patch.slugDirty !== true) {
+      return syncVisualColumnSlug(merged);
+    }
+    return merged;
+  }
+
+  function commitDraftColumn(column: VisualColumn, cursor: number): void {
+    setVisual((current) => {
+      focusAfterRender.current = { index: current.columns.length, cursor };
+      return {
+        ...current,
+        columns: ensurePrimaryKeyColumn([...current.columns, column]),
+      };
+    });
+    setDraftColumn(emptyVisualColumn());
+  }
+
+  function updateDraftColumn(
+    patch: Partial<VisualColumn>,
+    nameCursor?: number,
+  ): void {
+    setDraftColumn((current) => {
+      const merged = mergeColumnPatch(current, patch);
+      if (
+        patch.name !== undefined &&
+        current.name === "" &&
+        patch.name !== ""
+      ) {
+        const cursor = nameCursor ?? patch.name.length;
+        commitDraftColumn(merged, cursor);
+        return emptyVisualColumn();
+      }
+      return merged;
+    });
+  }
 
   function updateColumn(index: number, patch: Partial<VisualColumn>): void {
-    setColumns((current) =>
-      current.map((column, columnIndex) =>
-        columnIndex === index ? { ...column, ...patch } : column,
-      ),
-    );
+    setVisual((current) => {
+      const existing = current.columns[index];
+      if (existing === undefined) {
+        return current;
+      }
+      if (patch.name === "" && !existing.systemId) {
+        if (current.columns.length <= 1) {
+          return current;
+        }
+        const columns = ensurePrimaryKeyColumn(
+          current.columns.filter((_, columnIndex) => columnIndex !== index),
+        );
+        return { ...current, columns };
+      }
+
+      let columns = current.columns.map((column, columnIndex) =>
+        columnIndex === index ? mergeColumnPatch(column, patch) : column,
+      );
+      columns = ensurePrimaryKeyColumn(columns);
+      return { ...current, columns };
+    });
   }
 
   function removeColumn(index: number): void {
-    setColumns((current) =>
-      current.length <= 1 ? current : current.filter((_, columnIndex) => columnIndex !== index),
-    );
-  }
-
-  function switchToAdvanced(): void {
-    syncAdvancedFromVisual(columns);
-    setTab("advanced");
-  }
-
-  function switchToVisual(): void {
-    const parsed = parseJsonSchemaText(advancedText);
-    if (parsed.schema) {
-      setColumns(jsonSchemaToVisual(parsed.schema));
-    }
-    setTab("visual");
+    setVisual((current) => {
+      const column = current.columns[index];
+      if (column?.systemId || current.columns.length <= 1) {
+        return current;
+      }
+      const columns = ensurePrimaryKeyColumn(
+        current.columns.filter((_, columnIndex) => columnIndex !== index),
+      );
+      return { ...current, columns };
+    });
   }
 
   async function handleSubmit(event: Event): Promise<void> {
     event.preventDefault();
     setError(null);
+    setHint(null);
 
-    const nameError = validateTableName(name);
-    if (nameError) {
-      setError(nameError);
+    const slugError = validateSlug(visual.slug);
+    if (slugError) {
+      setError(slugError);
       return;
     }
-
-    const scopeError = validateScope(scope);
+    const scopeError = validateScope(visual.scope);
     if (scopeError) {
       setError(scopeError);
       return;
     }
-
-    let schema: Record<string, unknown>;
-    if (tab === "advanced") {
-      const parsed = parseJsonSchemaText(advancedText);
-      if (!parsed.schema) {
-        setError(parsed.error ?? "Invalid schema");
-        return;
-      }
-      schema = parsed.schema;
-    } else {
-      const nonEmpty = columns.filter((column) => column.name.trim());
-      if (nonEmpty.length === 0) {
-        setError("Add at least one column");
-        return;
-      }
-      schema = visualToJsonSchema(nonEmpty);
+    if (!visual.columns.some((column) => column.primaryKey && column.slug.trim())) {
+      setError("Mark at least one column as primary key");
+      return;
+    }
+    const validated = validateVisualTable(visual, knownTables);
+    if (!validated.ok) {
+      setError(validated.msg);
+      setHint(validated.hint ?? null);
+      return;
     }
 
     setSubmitting(true);
     try {
       await createTable({
-        name: name.trim(),
-        scope: scope.trim() || undefined,
-        schema,
+        definition: validated.definition,
+        scope: visual.scope.trim() || validated.definition.scope || undefined,
       });
-      onCreated(name.trim());
+      onCreated(validated.definition.slug);
     } catch (submitError) {
       setError(
         submitError instanceof Error ? submitError.message : "Failed to create table",
@@ -135,129 +212,97 @@ export function CreateTableForm({
 
       <form class="form-panel__body" onSubmit={(event) => void handleSubmit(event)}>
         <label class="form-field">
-          <span>Name</span>
+          <FormFieldLabel required>Display name</FormFieldLabel>
           <input
             type="text"
-            value={name}
-            onInput={(event) => setName((event.target as HTMLInputElement).value)}
-            placeholder="my_table"
+            value={visual.name}
+            onInput={(event) =>
+              handleNameChange((event.target as HTMLInputElement).value)
+            }
+            placeholder="My Tasks"
             required
           />
         </label>
 
         <label class="form-field">
-          <span>Scope (optional)</span>
+          <FormFieldLabel required>Slug</FormFieldLabel>
           <input
             type="text"
-            value={scope}
-            onInput={(event) => setScope((event.target as HTMLInputElement).value)}
+            value={visual.slug}
+            onInput={(event) =>
+              handleSlugChange((event.target as HTMLInputElement).value)
+            }
+            placeholder="my_tasks"
+            required
+          />
+        </label>
+
+        <label class="form-field">
+          <FormFieldLabel>Description</FormFieldLabel>
+          <input
+            type="text"
+            value={visual.description}
+            onInput={(event) =>
+              updateVisual({
+                description: (event.target as HTMLInputElement).value,
+              })
+            }
+          />
+        </label>
+
+        <label class="form-field">
+          <FormFieldLabel>Scope</FormFieldLabel>
+          <input
+            type="text"
+            value={visual.scope}
+            onInput={(event) =>
+              updateVisual({ scope: (event.target as HTMLInputElement).value })
+            }
             placeholder="finance"
           />
         </label>
 
-        <div class="v-tabs">
-          <div class="v-tab-bar" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              class={`v-tab${tab === "visual" ? " active" : ""}`}
-              aria-selected={tab === "visual"}
-              onClick={() => (tab === "advanced" ? switchToVisual() : setTab("visual"))}
-            >
-              Visual
-            </button>
-            <button
-              type="button"
-              role="tab"
-              class={`v-tab${tab === "advanced" ? " active" : ""}`}
-              aria-selected={tab === "advanced"}
-              onClick={() => (tab === "visual" ? switchToAdvanced() : setTab("advanced"))}
-            >
-              Advanced JSON
-            </button>
-          </div>
+        <div class="column-cards">
+          {visual.columns.map((column, index) => (
+            <ColumnCardEditor
+              key={column.key}
+              column={column}
+              refTargets={refTargets}
+              nameInputRef={(element) => {
+                columnNameRefs.current[index] = element;
+              }}
+              onUpdate={(patch) => updateColumn(index, patch)}
+              onRemove={() => removeColumn(index)}
+            />
+          ))}
+          <ColumnCardEditor
+            key={draftColumn.key}
+            column={draftColumn}
+            isDraft
+            refTargets={refTargets}
+            nameInputRef={(element) => {
+              columnNameRefs.current[visual.columns.length] = element;
+            }}
+            onUpdate={(patch) => {
+              if (patch.name !== undefined) {
+                const draftIndex = visual.columns.length;
+                const input = columnNameRefs.current[draftIndex];
+                updateDraftColumn(
+                  patch,
+                  input?.selectionStart ?? patch.name.length,
+                );
+                return;
+              }
+              updateDraftColumn(patch);
+            }}
+          />
         </div>
 
-        {tab === "visual" ? (
-          <div class="column-editor">
-            {columns.map((column, index) => (
-              <div class="column-editor__row" key={index}>
-                <input
-                  type="text"
-                  value={column.name}
-                  placeholder="column_name"
-                  onInput={(event) =>
-                    updateColumn(index, {
-                      name: (event.target as HTMLInputElement).value,
-                    })
-                  }
-                />
-                <select
-                  value={column.type}
-                  onChange={(event) =>
-                    updateColumn(index, {
-                      type: (event.target as HTMLSelectElement)
-                        .value as VisualColumnType,
-                    })
-                  }
-                >
-                  {COLUMN_TYPES.map((columnType) => (
-                    <option key={columnType} value={columnType}>
-                      {columnType}
-                    </option>
-                  ))}
-                </select>
-                <label class="column-editor__required">
-                  <input
-                    type="checkbox"
-                    checked={column.required}
-                    onChange={(event) =>
-                      updateColumn(index, {
-                        required: (event.target as HTMLInputElement).checked,
-                      })
-                    }
-                  />
-                  Required
-                </label>
-                <button
-                  type="button"
-                  class="v-button secondary"
-                  disabled={columns.length <= 1}
-                  onClick={() => removeColumn(index)}
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              class="v-button secondary"
-              onClick={() => setColumns((current) => [...current, emptyVisualColumn()])}
-            >
-              Add column
-            </button>
-          </div>
-        ) : (
-          <label class="form-field form-field--stacked">
-            <span>JSON Schema</span>
-            <textarea
-              rows={12}
-              value={advancedText}
-              onInput={(event) =>
-                setAdvancedText((event.target as HTMLTextAreaElement).value)
-              }
-            />
-          </label>
-        )}
-
         {error ? <div class="app-message app-message--error">{error}</div> : null}
+        {hint ? <div class="app-message app-message--hint">{hint}</div> : null}
 
         <div class="form-panel__actions">
-          <button
-            type="submit"
-            class="v-button"
-            disabled={submitting}
-          >
+          <button type="submit" class="v-button" disabled={submitting}>
             {submitting ? "Creating…" : "Create table"}
           </button>
         </div>

@@ -12,7 +12,11 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "baseUrl": ".",
+    "paths": {
+      "vellum-db/*": ["src/*"]
+    }
   },
   "include": ["hooks/**/*.ts", "tools/**/*.ts", "routes/**/*.ts", "src/**/*.ts", "tests/**/*.ts"]
 }

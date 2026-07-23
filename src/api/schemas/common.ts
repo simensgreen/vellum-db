@@ -13,8 +13,8 @@ export const OnConflictSchema = z.enum(["abort", "ignore", "replace"], {
   message: 'on_conflict must be "abort", "ignore", or "replace"',
 });
 
-export const IoModeSchema = z.enum(["csv", "json", "jsonl", "xls"], {
-  message: 'mode must be "csv", "json", "jsonl", or "xls"',
+export const IoModeSchema = z.enum(["csv", "json", "jsonl", "xlsx"], {
+  message: 'mode must be "csv", "json", "jsonl", or "xlsx"',
 });
 
 export const SavedQueryKindSchema = z.enum(["query", "aggregate"], {

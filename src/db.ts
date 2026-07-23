@@ -13,6 +13,8 @@ export type PluginConfig = {
   /** Relative to pluginStorageDir, or absolute. Omit for data/vellum-db.sqlite */
   databasePath: string | null;
   allowDropTable: boolean;
+  /** Days of _stats history to keep (UTC calendar days). */
+  statsRetentionDays: number;
 };
 
 const DEFAULT_CONFIG: PluginConfig = {
@@ -20,6 +22,7 @@ const DEFAULT_CONFIG: PluginConfig = {
   rawSqlMode: "select-only",
   databasePath: null,
   allowDropTable: false,
+  statsRetentionDays: 30,
 };
 
 let pluginConfig: PluginConfig = { ...DEFAULT_CONFIG };
@@ -55,7 +58,19 @@ export function parseConfig(raw: unknown): PluginConfig {
     typeof source.allowDropTable === "boolean"
       ? source.allowDropTable
       : DEFAULT_CONFIG.allowDropTable;
-  return { maxRowsPerQuery, rawSqlMode, databasePath, allowDropTable };
+  const statsRetentionDays =
+    typeof source.statsRetentionDays === "number" &&
+    Number.isFinite(source.statsRetentionDays) &&
+    source.statsRetentionDays >= 1
+      ? Math.floor(source.statsRetentionDays)
+      : DEFAULT_CONFIG.statsRetentionDays;
+  return {
+    maxRowsPerQuery,
+    rawSqlMode,
+    databasePath,
+    allowDropTable,
+    statsRetentionDays,
+  };
 }
 
 export function resolveDatabasePath(

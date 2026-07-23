@@ -7,15 +7,21 @@ import {
   type AggregateDefinition,
   type AggregateMetric,
 } from "./query-compile.ts";
+import { requireTable } from "./catalog.ts";
+import { isUserTableName, recordStatsDelta } from "./stats-store.ts";
 
 export type { AggregateDefinition, AggregateMetric };
 
 export function executeAggregateDefinition(definition: AggregateDefinition) {
+  const table = requireTable(definition.table);
   const compiled = compileAggregateQuery(definition);
   const fetched = getDatabase()
     .query(compiled.text)
     .all(...asBindings(compiled.values));
   const page = pageFromRows(fetched, compiled.limit, compiled.offset);
+  if (isUserTableName(table.name) && page.count > 0) {
+    recordStatsDelta({ reads: page.count });
+  }
   return {
     table: definition.table,
     count: page.count,

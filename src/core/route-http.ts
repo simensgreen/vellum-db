@@ -1,6 +1,7 @@
-import { getConfig } from "../db.ts";
-import { formatZodError } from "../api/format-zod-error.ts";
 import { z } from "zod";
+import { zodErrorToApiError } from "../api/format-zod-error.ts";
+import { ApiError, apiErrorResponse } from "../api/errors.ts";
+import { getConfig } from "../db.ts";
 
 export function clampLimit(limit: unknown): number {
   const config = getConfig();
@@ -9,7 +10,9 @@ export function clampLimit(limit: unknown): number {
   }
   const parsed = Number(limit);
   if (!Number.isFinite(parsed) || parsed < 1) {
-    throw new Error("limit must be a positive integer");
+    throw new ApiError("validation_error", "limit must be a positive integer", {
+      hint: "Provide limit as a positive integer",
+    });
   }
   return Math.min(Math.floor(parsed), config.maxRowsPerQuery);
 }
@@ -20,7 +23,9 @@ export function parseOffset(offset: unknown): number {
   }
   const parsed = Number(offset);
   if (!Number.isFinite(parsed) || parsed < 0) {
-    throw new Error("offset must be a non-negative integer");
+    throw new ApiError("validation_error", "offset must be a non-negative integer", {
+      hint: "Provide offset as zero or a positive integer",
+    });
   }
   return Math.floor(parsed);
 }
@@ -35,7 +40,9 @@ export function parseJsonQueryParam(
   try {
     return JSON.parse(value);
   } catch {
-    throw new Error(`${fieldName} must be valid JSON`);
+    throw new ApiError("invalid_json", `${fieldName} must be valid JSON`, {
+      hint: `Provide ${fieldName} as valid JSON text`,
+    });
   }
 }
 
@@ -44,7 +51,9 @@ export function parseRequiredJsonQueryParam(
   fieldName: string,
 ): unknown {
   if (value === null || value === "") {
-    throw new Error(`${fieldName} is required`);
+    throw new ApiError("validation_error", `${fieldName} is required`, {
+      hint: `Provide query parameter ${fieldName}`,
+    });
   }
   return parseJsonQueryParam(value, fieldName);
 }
@@ -55,7 +64,9 @@ export function requireQueryParam(
 ): string {
   const value = params.get(name);
   if (value === null || value === "") {
-    throw new Error(`Missing query parameter: ${name}`);
+    throw new ApiError("validation_error", `Missing query parameter: ${name}`, {
+      hint: `Provide query parameter ${name}`,
+    });
   }
   return value;
 }
@@ -87,17 +98,25 @@ export function optionalScopeParam(
 export async function parseJsonBody(request: Request): Promise<unknown> {
   const text = await request.text();
   if (text.trim() === "") {
-    throw new Error("Request body must be JSON");
+    throw new ApiError("invalid_json", "Request body must be JSON", {
+      hint: "Send a JSON object in the request body",
+    });
   }
   try {
     return JSON.parse(text);
   } catch {
-    throw new Error("Request body must be valid JSON");
+    throw new ApiError("invalid_json", "Request body must be valid JSON", {
+      hint: "Fix JSON syntax in the request body",
+    });
   }
 }
 
-export function routeError(message: string, status = 400): Response {
-  return Response.json({ error: message }, { status });
+export function routeErrorBody(body: {
+  type: string;
+  msg?: string;
+  hint?: string;
+}, status = 400): Response {
+  return Response.json(body, { status });
 }
 
 export function routeOk(data: unknown, status = 200): Response {
@@ -111,12 +130,22 @@ export async function handleRoute<T>(
     const result = await handler();
     return routeOk(result);
   } catch (error) {
+    if (error instanceof ApiError) {
+      return apiErrorResponse(error);
+    }
     if (error instanceof z.ZodError) {
-      return routeError(formatZodError(error), 400);
+      const body = zodErrorToApiError(error);
+      return routeErrorBody(body, 400);
     }
     const message =
       error instanceof Error ? error.message : "Internal server error";
     const status = message.includes("disabled") ? 403 : 400;
-    return routeError(message, status);
+    return routeErrorBody(
+      {
+        type: status === 403 ? "forbidden" : "bad_request",
+        msg: message,
+      },
+      status,
+    );
   }
 }

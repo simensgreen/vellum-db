@@ -29,6 +29,12 @@
   --v-accent-hover: #24292e;
   --v-shadow-sm: 0 1px 3px rgb(0 0 0 / 0.1);
   --v-shadow-md: 0 4px 12px rgb(0 0 0 / 0.1);
+  /* Billing usage trend chart (usage-trend-chart.tsx STACK_COLORS) */
+  --v-usage-trend-positive: #10b981;
+  --v-usage-trend-info: #3b82f6;
+  --v-usage-trend-mid: #f59e0b;
+  --v-usage-trend-negative: #f87171;
+  --v-usage-trend-tertiary: #9ca3af;
 }
 
 @media (prefers-color-scheme: dark) {

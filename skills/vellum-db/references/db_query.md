@@ -6,16 +6,16 @@ Read rows with a JSON filter (not SQL). Supports order, column projection, and `
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `table` | yes | Table name |
-| `filter` | no | JSON filter object |
-| `order` | no | `[{ "column", "direction": "asc"\|"desc" }]` |
+| `table` | yes | Table name (slug) |
+| `filter` | no | JSON filter object (keys = column **slugs**) |
+| `order` | no | `[{ "column", "direction": "asc"\|"desc" }]` — `column` is slug |
 | `limit` | no | Capped by `maxRowsPerQuery` |
 | `offset` | no | Default `0` |
-| `columns` | no | Subset to return (default: all including `id`) |
+| `columns` | no | Subset of slugs to return (default: all columns) |
 
 ## Output
 
-`{ table, count, limit, offset, has_more, rows }`. Each row includes nanoid `id` plus schema fields.
+`{ table, count, limit, offset, has_more, rows }`. Each row object is keyed by column slug (including primary key column(s)).
 
 ## Filters
 
@@ -23,11 +23,13 @@ Equality is a plain value. Comparisons use operators. Combine with `and` / `or`.
 
 | Shape | Meaning |
 | --- | --- |
-| `{ "status": "open" }` | Equals |
+| `{ "status": 0 }` | Equals (enum stored as index) |
 | `{ "points": { "gte": 2 } }` | Comparison (`gt`/`gte`/`lt`/`lte`/`ne`) |
-| `{ "status": { "in": ["open", "done"] } }` | Membership |
+| `{ "status": { "in": [0, 1] } }` | Membership |
 | `{ "title": { "like": "%plugin%" } }` | LIKE |
 | `{ "or": [ … ] }` / `{ "and": [ … ] }` | Boolean groups |
+
+For tables with a **single** primary-key column, filters may use `"id"` as an alias for that PK slug (REST commit and some helpers map `id` → PK slug).
 
 ## Examples
 
@@ -37,7 +39,7 @@ Equality is a plain value. Comparisons use operators. Combine with `and` / `or`.
 {
   "table": "tasks",
   "filter": {
-    "status": "open",
+    "status": 0,
     "points": { "gte": 2 }
   }
 }
@@ -54,22 +56,19 @@ Equality is a plain value. Comparisons use operators. Combine with `and` / `or`.
       { "owner": "sam" }
     ]
   },
-  "columns": ["id", "title", "status", "points"],
+  "columns": ["task_id", "title", "status", "points"],
   "order": [{ "column": "title", "direction": "asc" }],
   "limit": 20,
   "offset": 0
 }
 ```
 
-**Example excerpt** — `in` and `like`:
+**Example excerpt** — filter by primary key slug:
 
 ```json
 {
   "table": "tasks",
-  "filter": {
-    "status": { "in": ["open", "blocked"] },
-    "title": { "like": "%plugin%" }
-  }
+  "filter": { "task_id": "V1StGXR8_Z5jdHi6B-myT" }
 }
 ```
 

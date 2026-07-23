@@ -1,26 +1,26 @@
 # db_load
 
-Import rows from a file into a table. Validates each row against the table JSON Schema. Relative `path` resolves under the Vellum workspace (must stay inside it).
+Import rows from a file into a table. Validates each row against the table row schema. Relative `path` resolves under the Vellum workspace (must stay inside it).
 
 ## Inputs
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `table` | yes | Target table |
+| `table` | yes | Target table (slug) |
 | `path` | yes | Workspace-relative or absolute (inside workspace) |
-| `mode` | yes | `csv` \| `json` \| `jsonl` \| `xls` |
-| `on_conflict` | no | `abort` (default) \| `ignore` \| `replace` (by `id`) |
+| `mode` | yes | `csv` \| `json` \| `jsonl` \| `xlsx` |
+| `on_conflict` | no | `abort` (default) \| `ignore` \| `replace` (by primary key) |
 
 ## Modes
 
 | `mode` | File shape |
 | --- | --- |
-| `json` | Array of row objects |
+| `json` | Array of row objects (keys = column slugs) |
 | `jsonl` | One JSON object per line |
-| `csv` | Header row + data rows |
-| `xls` | Excel workbook (`.xlsx`); first sheet |
+| `csv` | Header row (slug names) + data rows |
+| `xlsx` | Excel workbook (`.xlsx`); first sheet |
 
-Optional `id` in the file is used for conflict handling; otherwise a nanoid is generated per row.
+Primary key columns may appear in the file for conflict handling; omitted PK values use insert defaults when loading new rows.
 
 ## Output
 
@@ -38,7 +38,7 @@ Optional `id` in the file is used for conflict handling; otherwise a nanoid is g
 }
 ```
 
-**Example excerpt** — reload JSON replacing by id:
+**Example excerpt** — reload JSON replacing by primary key:
 
 ```json
 {
@@ -49,4 +49,4 @@ Optional `id` in the file is used for conflict handling; otherwise a nanoid is g
 }
 ```
 
-Export with `db_dump`.
+Export with `db_dump`. The Database app also supports direct upload via REST `POST /import?table=&filename=` (format inferred from filename).

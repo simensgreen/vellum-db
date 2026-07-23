@@ -1,32 +1,35 @@
+import type { RowsResponse, TableSummary } from "../api.ts";
 import { RowsGrid } from "./RowsGrid.tsx";
 
 export function TableDetailView({
-  tableName,
+  table,
   rowsState,
   rowsError,
-  onPageChange,
-  onEditSchema,
+  rowLimit,
+  onOffsetChange,
+  onLimitChange,
+  onApplySuccess,
 }: {
-  tableName: string;
-  rowsState: import("../api.ts").RowsResponse | null;
+  table: TableSummary;
+  rowsState: RowsResponse | null;
   rowsError: string | null;
-  onPageChange: (offset: number) => void;
-  onEditSchema: () => void;
+  rowLimit: number;
+  onOffsetChange: (offset: number) => void;
+  onLimitChange: (limit: number) => void;
+  onApplySuccess?: () => void;
 }) {
   return (
     <div class="table-detail">
-      <div class="table-detail__toolbar">
-        <button type="button" class="v-button secondary" onClick={onEditSchema}>
-          Edit schema
-        </button>
-      </div>
       {rowsError ? (
         <div class="app-message app-message--error">{rowsError}</div>
       ) : (
         <RowsGrid
-          tableName={tableName}
+          table={table}
           rowsState={rowsState}
-          onPageChange={onPageChange}
+          limit={rowLimit}
+          onOffsetChange={onOffsetChange}
+          onLimitChange={onLimitChange}
+          onApplySuccess={onApplySuccess}
         />
       )}
     </div>

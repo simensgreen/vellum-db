@@ -2,7 +2,7 @@
 
 **Shared structured storage for Vellum agents.**
 
-A Vellum plugin that gives every skill and workflow a common place to keep tabular data — create tables from JSON Schema, insert and update rows, filter and aggregate with JSON (not ad-hoc SQL), and save named queries for reuse. One storage system; many domains.
+A Vellum plugin that gives every skill and workflow a common place to keep tabular data — create tables from **TableDefinition DSL**, insert and update rows, filter and aggregate with JSON (not ad-hoc SQL), and save named queries for reuse. One storage system; many domains.
 
 ## Why this exists
 
@@ -14,7 +14,7 @@ Without a shared store, each feature tends to ship its own plugin and its own CR
 - **Domain logic lives in skills** — table names, schemas, when to query, which saved queries to run, and why — not in new TypeScript tools.
 - An agent that loads the right skill can use the shared tools immediately. No per-domain CRUD code required.
 
-Example: a “expense tracker” skill documents tables like `expenses` and `categories`, the JSON Schema for each, how to log a purchase, and which aggregate answers “spend by month.” The skill does not implement storage; it teaches the agent how to drive **vellum-db**.
+Example: an “expense tracker” skill documents tables like `expenses` and `categories`, the **TableDefinition** for each, how to log a purchase, and which aggregate answers “spend by month.” The skill does not implement storage; it teaches the agent how to drive **vellum-db**.
 
 ## What you can build on it
 
@@ -30,12 +30,12 @@ If the shape fits “rows in tables + filters + rollups,” a skill on top of th
 
 ## How it works (agent view)
 
-1. **Define tables** — JSON Schema → SQLite columns (`db_create_table`). Optional `scope` to group related tables.
-2. **Write and change rows** — `db_insert`, `db_update`, `db_delete` with JSON filters.
+1. **Define tables** — **TableDefinition DSL** → SQLite columns (`db_create_table`). Optional `scope` to group related tables. See **`vellum-db-meta`**.
+2. **Write and change rows** — `db_insert`, `db_update`, `db_delete` with JSON filters (column slugs).
 3. **Read and analyze** — `db_query` (filter / order / page) and `db_aggregate` (count, sum, avg, min, max, group by).
 4. **Reuse analysis** — `db_save_query` / `db_run_saved_query` with `$param` placeholders.
 5. **Discover** — `db_list_tables` (and saved-query listing) with filters and pagination.
-6. **Import / export** — `db_load` / `db_dump` (`csv`, `json`, `jsonl`, or Excel via `xls`).
+6. **Import / export** — `db_load` / `db_dump` (`csv`, `json`, `jsonl`, `xlsx`).
 
 Built-in skills:
 
@@ -54,7 +54,10 @@ OpenAPI 3.1 spec: [`openapi.json`](./openapi.json) (generated via [`@asteasoluti
 
 App id `plugins~vellum-db~tables` (directory `apps/tables/`). UI display name: **Database**.
 
-- Browse tables and paginated rows; create tables and alter schema (visual column editor or advanced JSON).
+- Browse tables and paginated rows; create tables and alter schema (visual column editor or advanced JSON **TableDefinition**).
+- Staged row edits with batch commit via REST `POST /rows/commit` (`insert`, `update`, `delete` maps).
+- Import/export via REST `GET /export` and `POST /import` (direct file download/upload; import format from filename).
+- Overview dashboard via `GET /stats`.
 - Uses `window.vellum.fetch` against the REST routes and `window.vellum.subscribe` with tags from `sync-tags.ts` for live refresh.
 - Library card preview renders a static table icon when the host omits the fetch proxy (`isCardPreview()`).
 

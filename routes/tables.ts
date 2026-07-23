@@ -1,12 +1,14 @@
-import { parseRouteBody, parseRouteQuery } from "../src/api/parse-request.ts";
-import {
-  CreateTableBodySchema,
-  CreateTableQuerySchema,
-  ListTablesQuerySchema,
-} from "../src/api/schemas/tables.ts";
+import { buildKnownTablesMap } from "../src/core/catalog.ts";
 import { listTablesView } from "../src/core/list-tables.ts";
 import { createTable } from "../src/core/table-ddl.ts";
-import { handleRoute } from "../src/core/route-http.ts";
+import { assertTableDefinition } from "../src/core/table/index.ts";
+import { parseRouteQuery } from "../src/api/parse-request.ts";
+import { ListTablesQuerySchema } from "../src/api/schemas/tables.ts";
+import {
+  handleRoute,
+  optionalScopeParam,
+  parseJsonBody,
+} from "../src/core/route-http.ts";
 
 export const description = "List or create structured tables";
 
@@ -27,14 +29,14 @@ export async function GET(request: Request): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   return handleRoute(async () => {
-    const query = parseRouteQuery(request, CreateTableQuerySchema, {
-      scope: true,
-    });
-    const schema = await parseRouteBody(request, CreateTableBodySchema);
+    const url = new URL(request.url);
+    const scope = optionalScopeParam(url.searchParams);
+    const body = await parseJsonBody(request);
+    const knownTables = buildKnownTablesMap();
+    const definition = assertTableDefinition(body, { knownTables });
     return createTable({
-      name: query.name,
-      schema,
-      scope: query.scope,
+      definition,
+      ...(scope !== undefined ? { scope } : {}),
     });
   });
 }

@@ -1,9 +1,10 @@
 import { z } from "../api/zod.ts";
-import { TableJsonSchemaSchema } from "../api/schemas/common.ts";
 
 export const responseSchemas = {
-  ErrorSchema: z.object({
-    error: z.string(),
+  ApiErrorSchema: z.object({
+    type: z.string(),
+    msg: z.string().optional(),
+    hint: z.string().optional(),
   }),
   PaginatedMetaSchema: z.object({
     count: z.number().int().nonnegative(),
@@ -11,15 +12,19 @@ export const responseSchemas = {
     offset: z.number().int().nonnegative(),
     has_more: z.boolean(),
   }),
+  TableDefinitionSchema: z.record(z.string(), z.unknown()).meta({
+    description: "TableDefinition DSL (slug, name, columns with primaryKey)",
+  }),
   TableSummarySchema: z.object({
     name: z.string(),
     scope: z.string().nullable(),
-    schema: TableJsonSchemaSchema,
+    definition: z.record(z.string(), z.unknown()),
     columns: z.array(
       z.object({
         name: z.string(),
-        sql_type: z.string(),
-        nullable: z.boolean(),
+        sqlType: z.enum(["TEXT", "INTEGER", "REAL"]),
+        notNull: z.boolean(),
+        jsonStored: z.boolean(),
       }),
     ),
     created_at: z.string(),
@@ -27,6 +32,7 @@ export const responseSchemas = {
   }),
   QueryResultSchema: z.object({
     count: z.number().int().nonnegative(),
+    total_count: z.number().int().nonnegative(),
     limit: z.number().int().positive(),
     offset: z.number().int().nonnegative(),
     has_more: z.boolean(),
@@ -38,19 +44,19 @@ export const responseSchemas = {
 export const errorResponses = {
   400: {
     description: "Invalid input",
-    content: { "application/json": { schema: responseSchemas.ErrorSchema } },
+    content: { "application/json": { schema: responseSchemas.ApiErrorSchema } },
   },
   403: {
     description: "Forbidden (config gate or auth)",
-    content: { "application/json": { schema: responseSchemas.ErrorSchema } },
+    content: { "application/json": { schema: responseSchemas.ApiErrorSchema } },
   },
   404: {
     description: "Not found",
-    content: { "application/json": { schema: responseSchemas.ErrorSchema } },
+    content: { "application/json": { schema: responseSchemas.ApiErrorSchema } },
   },
   500: {
     description: "Internal error",
-    content: { "application/json": { schema: responseSchemas.ErrorSchema } },
+    content: { "application/json": { schema: responseSchemas.ApiErrorSchema } },
   },
 } as const;
 
@@ -61,3 +67,6 @@ export const successResponses = {
   },
   ...errorResponses,
 } as const;
+
+/** @deprecated use ApiErrorSchema */
+export const ErrorSchema = responseSchemas.ApiErrorSchema;

@@ -2,12 +2,15 @@ import { nanoid } from "nanoid";
 import { asBindings } from "../bindings.ts";
 import {
   encodeCellValue,
+  getCompiledColumns,
   getTableColumns,
+  parseTableDefinition,
   quoteIdentExport,
   type TableRow,
 } from "./catalog.ts";
 import { getDatabase } from "../db.ts";
 import { validateRowAgainstSchema } from "../schema-validate.ts";
+import { primaryKeySlugs } from "./table/types.ts";
 
 export type OnConflict = "abort" | "ignore" | "replace";
 
@@ -20,7 +23,7 @@ export const onConflictInputSchema = {
   type: "string",
   enum: ["abort", "ignore", "replace"],
   description:
-    'Primary-key conflict policy for optional row id: "abort" (default) fails, "ignore" skips, "replace" overwrites. Without id, a new nanoid is generated.',
+    'Primary-key conflict policy: "abort" (default) fails, "ignore" skips, "replace" overwrites.',
 } as const;
 
 export function createRowId(): string {
@@ -42,24 +45,82 @@ export function parseOptionalRowId(raw: unknown): string | undefined {
     return undefined;
   }
   if (typeof raw !== "string") {
-    throw new Error('row "id" must be a nanoid string when provided');
+    throw new Error("primary key value must be a string when provided");
   }
   const trimmed = raw.trim();
   if (!ROWID_PATTERN.test(trimmed)) {
     throw new Error(
-      'row "id" must match nanoid alphabet [A-Za-z0-9_-] (1-64 chars)',
+      "primary key string must match nanoid alphabet [A-Za-z0-9_-] (1-64 chars)",
     );
   }
   return trimmed;
 }
 
-function rowExists(tableName: string, rowId: string): boolean {
-  const found = getDatabase()
-    .query(
-      `SELECT 1 AS ok FROM ${quoteIdentExport(tableName)} WHERE id = ? LIMIT 1`,
-    )
-    .get(rowId);
+function applyInsertDefaults(
+  rowInput: Record<string, unknown>,
+  table: TableRow,
+): Record<string, unknown> {
+  const compiledColumns = getCompiledColumns(table);
+  const row: Record<string, unknown> = { ...rowInput };
+
+  for (const column of compiledColumns) {
+    if (Object.prototype.hasOwnProperty.call(row, column.slug)) {
+      continue;
+    }
+    if (column.insertDefault === "nanoid") {
+      row[column.slug] = createRowId();
+      continue;
+    }
+    if (column.insertDefault === "now") {
+      row[column.slug] = new Date().toISOString();
+    }
+  }
+
+  return row;
+}
+
+function buildPrimaryKeyWhere(
+  tableName: string,
+  primaryKeyValues: Record<string, unknown>,
+): { sql: string; values: unknown[] } {
+  const entries = Object.entries(primaryKeyValues);
+  const clauses = entries.map(
+    ([slug]) => `${quoteIdentExport(slug)} = ?`,
+  );
+  return {
+    sql: `SELECT 1 AS ok FROM ${quoteIdentExport(tableName)} WHERE ${clauses.join(" AND ")} LIMIT 1`,
+    values: entries.map(([, value]) => value),
+  };
+}
+
+function rowExists(
+  tableName: string,
+  primaryKeyValues: Record<string, unknown>,
+): boolean {
+  const query = buildPrimaryKeyWhere(tableName, primaryKeyValues);
+  const found = getDatabase().query(query.sql).get(...asBindings(query.values));
   return found !== null && found !== undefined;
+}
+
+function extractPrimaryKeyValues(
+  row: Record<string, unknown>,
+  primaryKeySlugs: string[],
+): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
+  for (const slug of primaryKeySlugs) {
+    values[slug] = row[slug];
+  }
+  return values;
+}
+
+function resolveResultId(
+  primaryKeySlugs: string[],
+  row: Record<string, unknown>,
+): string {
+  if (primaryKeySlugs.length === 1) {
+    return String(row[primaryKeySlugs[0]!]);
+  }
+  return primaryKeySlugs.map((slug) => String(row[slug])).join(":");
 }
 
 export function insertTableRow(
@@ -67,20 +128,34 @@ export function insertTableRow(
   rowInput: Record<string, unknown>,
   onConflict: OnConflict = "abort",
 ): { id: string; changes: number; outcome: InsertOutcome } {
-  const explicitId = parseOptionalRowId(rowInput.id);
-  const rowId = explicitId ?? createRowId();
-  const rowForValidation: Record<string, unknown> = { ...rowInput };
-  delete rowForValidation.id;
-  validateRowAgainstSchema(table.name, table.schema_json, rowForValidation);
+  const definition = parseTableDefinition(table);
+  const primaryKeySlugsList = primaryKeySlugs(definition);
+  const rowWithDefaults = applyInsertDefaults(rowInput, table);
+
+  for (const pkSlug of primaryKeySlugsList) {
+    if (
+      rowWithDefaults[pkSlug] === undefined ||
+      rowWithDefaults[pkSlug] === null
+    ) {
+      throw new Error(`Primary key column "${pkSlug}" is required`);
+    }
+  }
+
+  validateRowAgainstSchema(table.name, table.schema_json, rowWithDefaults);
 
   const columns = getTableColumns(table);
-  const columnNames = ["id", ...columns.map((column) => column.name)];
-  const values = [
-    rowId,
-    ...columns.map((column) =>
-      encodeCellValue(rowForValidation[column.name], column),
-    ),
-  ];
+  const columnNames = columns.map((column) => column.name);
+  const values = columns.map((column) =>
+    encodeCellValue(rowWithDefaults[column.name], column),
+  );
+
+  const primaryKeyValues = extractPrimaryKeyValues(
+    rowWithDefaults,
+    primaryKeySlugsList,
+  );
+  const explicitPrimaryKey = primaryKeySlugsList.every((slug) =>
+    Object.prototype.hasOwnProperty.call(rowInput, slug),
+  );
 
   const insertKeyword =
     onConflict === "ignore"
@@ -94,29 +169,30 @@ export function insertTableRow(
     .join(", ")}) VALUES (${placeholders})`;
 
   const existed =
-    explicitId !== undefined &&
+    explicitPrimaryKey &&
     (onConflict === "ignore" || onConflict === "replace")
-      ? rowExists(table.name, explicitId)
+      ? rowExists(table.name, primaryKeyValues)
       : false;
 
   const result = getDatabase().query(sqlText).run(...asBindings(values));
+  const resultId = resolveResultId(primaryKeySlugsList, rowWithDefaults);
 
   if (onConflict === "ignore" && result.changes === 0) {
     return {
-      id: rowId,
+      id: resultId,
       changes: 0,
       outcome: "ignored",
     };
   }
   if (onConflict === "replace" && existed) {
     return {
-      id: rowId,
+      id: resultId,
       changes: result.changes,
       outcome: "replaced",
     };
   }
   return {
-    id: rowId,
+    id: resultId,
     changes: result.changes,
     outcome: "inserted",
   };

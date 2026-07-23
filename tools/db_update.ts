@@ -12,11 +12,13 @@ const inputSchema = {
     table: { type: "string" },
     filter: {
       type: "object",
-      description: "JSON filter selecting rows to update (required, non-empty)",
+      description:
+        "JSON filter selecting rows to update (required, non-empty; keys = column slugs)",
     },
     patch: {
       type: "object",
-      description: "Partial row fields to set; merged with existing for validation",
+      description:
+        "Partial row fields to set (column slugs); merged with existing for validation",
       minProperties: 1,
     },
   },

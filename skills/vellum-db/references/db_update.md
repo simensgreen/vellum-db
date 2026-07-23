@@ -1,13 +1,13 @@
 # db_update
 
-Patch rows matching a JSON filter. Filter MUST be a non-empty object (empty filter is rejected). Each matched row is merged with `patch` and re-validated against the table schema.
+Patch rows matching a JSON filter. Filter MUST be a non-empty object (empty filter is rejected). Each matched row is merged with `patch` and re-validated against the table row schema. Patch keys are column **slugs**.
 
 ## Inputs
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `table` | yes | Table name |
-| `filter` | yes | Non-empty JSON filter |
+| `table` | yes | Table name (slug) |
+| `filter` | yes | Non-empty JSON filter (column slugs) |
 | `patch` | yes | Partial fields to set (`minProperties: 1`) |
 
 ## Output
@@ -16,13 +16,13 @@ Patch rows matching a JSON filter. Filter MUST be a non-empty object (empty filt
 
 ## Examples
 
-**Example excerpt** — update by nanoid id:
+**Example excerpt** — update by primary key slug:
 
 ```json
 {
   "table": "tasks",
-  "filter": { "id": "V1StGXR8_Z5jdHi6B-myT" },
-  "patch": { "status": "done" }
+  "filter": { "task_id": "V1StGXR8_Z5jdHi6B-myT" },
+  "patch": { "status": 1 }
 }
 ```
 
@@ -31,8 +31,8 @@ Patch rows matching a JSON filter. Filter MUST be a non-empty object (empty filt
 ```json
 {
   "table": "tasks",
-  "filter": { "status": "blocked" },
-  "patch": { "status": "open" }
+  "filter": { "status": 0 },
+  "patch": { "status": 1 }
 }
 ```
 
@@ -42,8 +42,8 @@ Patch rows matching a JSON filter. Filter MUST be a non-empty object (empty filt
 {
   "table": "tasks",
   "filter": {},
-  "patch": { "status": "done" }
+  "patch": { "status": 1 }
 }
 ```
 
-Filter shapes are the same JSON filters as `db_query` (equality, operators, `and`/`or`).
+Filter shapes are the same JSON filters as `db_query`. Single-PK tables may also accept `"id"` in the filter as an alias for the PK slug.

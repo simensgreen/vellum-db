@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "vellum-db REST API",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "HTTP API for the vellum-db Vellum plugin. Same capabilities as db_* tools. Reads use query parameters (JSON fields URL-encoded). Mutations put table/name scalars in query and payload in JSON body."
   },
   "servers": [
@@ -42,12 +42,18 @@
       "Error": {
         "type": "object",
         "properties": {
-          "error": {
+          "type": {
+            "type": "string"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "hint": {
             "type": "string"
           }
         },
         "required": [
-          "error"
+          "type"
         ]
       },
       "PaginatedMeta": {
@@ -88,7 +94,7 @@
               "null"
             ]
           },
-          "schema": {
+          "definition": {
             "type": "object",
             "additionalProperties": {}
           },
@@ -100,17 +106,26 @@
                 "name": {
                   "type": "string"
                 },
-                "sql_type": {
-                  "type": "string"
+                "sqlType": {
+                  "type": "string",
+                  "enum": [
+                    "TEXT",
+                    "INTEGER",
+                    "REAL"
+                  ]
                 },
-                "nullable": {
+                "notNull": {
+                  "type": "boolean"
+                },
+                "jsonStored": {
                   "type": "boolean"
                 }
               },
               "required": [
                 "name",
-                "sql_type",
-                "nullable"
+                "sqlType",
+                "notNull",
+                "jsonStored"
               ]
             }
           },
@@ -124,7 +139,7 @@
         "required": [
           "name",
           "scope",
-          "schema",
+          "definition",
           "columns",
           "created_at",
           "updated_at"
@@ -134,6 +149,10 @@
         "type": "object",
         "properties": {
           "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_count": {
             "type": "integer",
             "minimum": 0
           },
@@ -158,6 +177,7 @@
         },
         "required": [
           "count",
+          "total_count",
           "limit",
           "offset",
           "has_more",
@@ -178,16 +198,17 @@
           "csv",
           "json",
           "jsonl",
-          "xls"
+          "xlsx"
         ]
       },
       "JsonFilter": {
         "type": "object",
         "additionalProperties": {}
       },
-      "JsonSchema": {
+      "TableDefinition": {
         "type": "object",
-        "additionalProperties": {}
+        "additionalProperties": {},
+        "description": "TableDefinition DSL (slug, name, columns with primaryKey)"
       }
     },
     "parameters": {}
@@ -277,7 +298,7 @@
                               "null"
                             ]
                           },
-                          "schema": {
+                          "definition": {
                             "type": "object",
                             "additionalProperties": {}
                           },
@@ -289,17 +310,26 @@
                                 "name": {
                                   "type": "string"
                                 },
-                                "sql_type": {
-                                  "type": "string"
+                                "sqlType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "TEXT",
+                                    "INTEGER",
+                                    "REAL"
+                                  ]
                                 },
-                                "nullable": {
+                                "notNull": {
+                                  "type": "boolean"
+                                },
+                                "jsonStored": {
                                   "type": "boolean"
                                 }
                               },
                               "required": [
                                 "name",
-                                "sql_type",
-                                "nullable"
+                                "sqlType",
+                                "notNull",
+                                "jsonStored"
                               ]
                             }
                           },
@@ -313,7 +343,7 @@
                         "required": [
                           "name",
                           "scope",
-                          "schema",
+                          "definition",
                           "columns",
                           "created_at",
                           "updated_at"
@@ -339,12 +369,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -357,12 +393,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -375,12 +417,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -393,12 +441,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -416,15 +470,6 @@
           {
             "schema": {
               "type": "string",
-              "minLength": 1
-            },
-            "required": true,
-            "name": "name",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string",
               "pattern": "^[a-z][a-z0-9_]*$"
             },
             "required": false,
@@ -433,12 +478,13 @@
           }
         ],
         "requestBody": {
-          "description": "JSON Schema for row columns (excluding id)",
+          "description": "TableDefinition DSL",
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "additionalProperties": {}
+                "additionalProperties": {},
+                "description": "TableDefinition DSL (slug, name, columns with primaryKey)"
               }
             }
           }
@@ -462,12 +508,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -480,12 +532,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -498,12 +556,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -516,12 +580,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -571,14 +641,18 @@
                         "name": {
                           "type": "string"
                         },
-                        "schema": {
+                        "slug": {
+                          "type": "string"
+                        },
+                        "column": {
                           "type": "object",
                           "additionalProperties": {}
                         }
                       },
                       "required": [
                         "name",
-                        "schema"
+                        "slug",
+                        "column"
                       ]
                     }
                   },
@@ -612,12 +686,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -630,12 +710,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -648,12 +734,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -666,12 +758,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -718,12 +816,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -736,12 +840,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -754,12 +864,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -772,12 +888,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -861,6 +983,10 @@
                       "type": "integer",
                       "minimum": 0
                     },
+                    "total_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
                     "limit": {
                       "type": "integer",
                       "exclusiveMinimum": 0
@@ -882,6 +1008,7 @@
                   },
                   "required": [
                     "count",
+                    "total_count",
                     "limit",
                     "offset",
                     "has_more",
@@ -898,12 +1025,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -916,12 +1049,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -934,12 +1073,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -952,12 +1097,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1001,7 +1152,7 @@
               "schema": {
                 "type": "object",
                 "additionalProperties": {},
-                "description": "Row fields (id optional; nanoid generated when omitted)"
+                "description": "Row fields; primary key columns optional when defaults apply"
               }
             }
           }
@@ -1025,12 +1176,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1043,12 +1200,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1061,12 +1224,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1079,12 +1248,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1151,12 +1326,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1169,12 +1350,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1187,12 +1374,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1205,12 +1398,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1272,12 +1471,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1290,12 +1495,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1308,12 +1519,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1326,12 +1543,183 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rows/commit": {
+      "post": {
+        "operationId": "commitRows",
+        "summary": "Apply row changes in one transaction",
+        "description": "Atomically apply updates, inserts, and deletes for a single table. All changes commit or none do.",
+        "tags": [
+          "rows"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "table",
+            "in": "query"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "insert": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "default": []
+                  },
+                  "update": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "default": {}
+                  },
+                  "delete": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "default": []
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden (config gate or auth)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
                   ]
                 }
               }
@@ -1431,12 +1819,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1449,12 +1843,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1467,12 +1867,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1485,12 +1891,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1568,12 +1980,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1586,12 +2004,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1604,12 +2028,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1622,12 +2052,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1702,12 +2138,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1720,12 +2162,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1738,12 +2186,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1756,12 +2210,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1815,12 +2275,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1833,12 +2299,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1851,12 +2323,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1869,12 +2347,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1920,12 +2404,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1938,12 +2428,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1956,12 +2452,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -1974,12 +2476,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -2021,7 +2529,7 @@
                 "csv",
                 "json",
                 "jsonl",
-                "xls"
+                "xlsx"
               ]
             },
             "required": true,
@@ -2061,12 +2569,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -2079,12 +2593,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -2097,12 +2617,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -2115,12 +2641,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -2162,7 +2694,7 @@
                 "csv",
                 "json",
                 "jsonl",
-                "xls"
+                "xlsx"
               ]
             },
             "required": true,
@@ -2189,12 +2721,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -2207,12 +2745,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -2225,12 +2769,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -2243,12 +2793,563 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/export": {
+      "get": {
+        "operationId": "exportTable",
+        "summary": "Download table rows as a file",
+        "tags": [
+          "io"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "table",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "csv",
+                "json",
+                "jsonl",
+                "xlsx"
+              ]
+            },
+            "required": true,
+            "name": "mode",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Table export file",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden (config gate or auth)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/import": {
+      "post": {
+        "operationId": "importTable",
+        "summary": "Upload a file and load rows into a table",
+        "tags": [
+          "io"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "table",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "csv",
+                "json",
+                "jsonl",
+                "xlsx"
+              ]
+            },
+            "required": false,
+            "name": "mode",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "filename",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "abort",
+                "ignore",
+                "replace"
+              ]
+            },
+            "required": false,
+            "name": "on_conflict",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden (config gate or auth)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats": {
+      "get": {
+        "operationId": "getDatabaseStats",
+        "summary": "Database overview statistics",
+        "tags": [
+          "stats"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ]
+            },
+            "required": false,
+            "name": "granularity",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Overview stats and time buckets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "table_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "row_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "database_bytes": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "table_count",
+                        "row_count",
+                        "database_bytes"
+                      ]
+                    },
+                    "retention_days": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "granularity": {
+                      "type": "string",
+                      "enum": [
+                        "day",
+                        "week",
+                        "month"
+                      ]
+                    },
+                    "buckets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "start": {
+                            "type": "string"
+                          },
+                          "inserts": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "updates": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "deletions": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "reads": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "total": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "table_count": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "row_count": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "database_bytes": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "start",
+                          "inserts",
+                          "updates",
+                          "deletions",
+                          "reads",
+                          "total",
+                          "table_count",
+                          "row_count",
+                          "database_bytes"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "summary",
+                    "retention_days",
+                    "granularity",
+                    "buckets"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden (config gate or auth)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
                   ]
                 }
               }
@@ -2302,12 +3403,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -2320,12 +3427,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -2338,12 +3451,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }
@@ -2356,12 +3475,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "hint": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "error"
+                    "type"
                   ]
                 }
               }

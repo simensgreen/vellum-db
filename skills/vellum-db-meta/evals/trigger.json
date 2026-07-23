@@ -3,13 +3,13 @@
     "id": "create-table-should-trigger",
     "should_trigger": true,
     "target_skill": "vellum-db-meta",
-    "query": "Create a vellum-db table for projects with name, status, and optional deadline JSON Schema."
+    "query": "Create a vellum-db table for projects with name, status, and optional due date using TableDefinition."
   },
   {
     "id": "list-schemas-should-trigger",
     "should_trigger": true,
     "target_skill": "vellum-db-meta",
-    "query": "List all structured tables and show me their columns and JSON schemas."
+    "query": "List all structured tables and show me their TableDefinition and columns."
   },
   {
     "id": "add-column-should-trigger",

@@ -1,14 +1,14 @@
 # db_dump
 
-Export all rows from a table to a file. Includes nanoid `id`. Relative `path` resolves under the Vellum workspace (must stay inside it).
+Export all rows from a table to a file. Includes all columns (primary key slugs in header/keys). Relative `path` resolves under the Vellum workspace (must stay inside it).
 
 ## Inputs
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `table` | yes | Source table |
+| `table` | yes | Source table (slug) |
 | `path` | yes | Workspace-relative or absolute (inside workspace) |
-| `mode` | yes | `csv` \| `json` \| `jsonl` \| `xls` |
+| `mode` | yes | `csv` \| `json` \| `jsonl` \| `xlsx` |
 
 ## Modes
 
@@ -16,8 +16,8 @@ Export all rows from a table to a file. Includes nanoid `id`. Relative `path` re
 | --- | --- |
 | `json` | Pretty-printed array of row objects |
 | `jsonl` | One JSON object per line |
-| `csv` | Header row including `id` |
-| `xls` | Excel workbook (`.xlsx`) |
+| `csv` | Header row with column slugs |
+| `xlsx` | Excel workbook (`.xlsx`) |
 
 ## Output
 
@@ -45,4 +45,4 @@ Export all rows from a table to a file. Includes nanoid `id`. Relative `path` re
 }
 ```
 
-Import with `db_load`.
+Import with `db_load`. The Database app also supports direct download via REST `GET /export?table=&mode=` (filename `{table}.{mode}`).

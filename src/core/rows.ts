@@ -1,4 +1,3 @@
-import { getConfig } from "../db.ts";
 import {
   insertTableRow,
   parseOnConflict,
@@ -8,6 +7,7 @@ import {
 import { requireTable, type TableRow } from "./catalog.ts";
 import { invalidationTagsForRowMutation } from "./sync-tags.ts";
 import { notifyInvalidation } from "./sync.ts";
+import { isUserTableName, recordStatsDelta } from "./stats-store.ts";
 
 export type { OnConflict, InsertOutcome };
 
@@ -15,12 +15,17 @@ export function insertRow(input: {
   table: string;
   row: Record<string, unknown>;
   on_conflict?: OnConflict;
+  sideEffects?: boolean;
 }) {
+  const sideEffects = input.sideEffects ?? true;
   const table = requireTable(input.table);
   const onConflict = parseOnConflict(input.on_conflict);
   const result = insertTableRow(table, input.row, onConflict);
-  if (result.outcome !== "ignored") {
+  if (sideEffects && result.outcome !== "ignored") {
     notifyInvalidation(invalidationTagsForRowMutation(table.name));
+    if (isUserTableName(table.name)) {
+      recordStatsDelta({ inserts: 1 });
+    }
   }
   return {
     table: table.name,

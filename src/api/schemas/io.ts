@@ -18,3 +18,25 @@ export const DumpTableQuerySchema = z.object({
   path: requiredQueryString("path"),
   mode: IoModeSchema,
 });
+
+export const ExportTableQuerySchema = z.object({
+  table: TableNameSchema,
+  mode: IoModeSchema,
+});
+
+export const ImportTableQuerySchema = z
+  .object({
+    table: TableNameSchema,
+    mode: IoModeSchema.optional(),
+    filename: z.string().min(1).optional(),
+    on_conflict: OnConflictSchema.optional(),
+  })
+  .superRefine((value, context) => {
+    if (!value.mode && !value.filename) {
+      context.addIssue({
+        code: "custom",
+        message: "Provide query parameter mode or filename",
+        path: ["mode"],
+      });
+    }
+  });

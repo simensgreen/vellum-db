@@ -2,27 +2,38 @@ import { compileFilter, type JsonFilter } from "@truto/sqlite-builder";
 import { getDatabase } from "../db.ts";
 import { asBindings } from "../bindings.ts";
 import {
+  decodeRow,
   encodeCellValue,
   getTableColumns,
+  parseTableDefinition,
   quoteIdentExport,
   requireTable,
 } from "./catalog.ts";
-import { validateRowAgainstSchema } from "../schema-validate.ts";
+import {
+  type JsonSchemaObject,
+  validateRowAgainstSchema,
+} from "../schema-validate.ts";
+import { primaryKeySlugs } from "./table/types.ts";
+import { resolveRowIdFilter } from "./row-id-filter.ts";
 import { invalidationTagsForRowMutation } from "./sync-tags.ts";
 import { notifyInvalidation } from "./sync.ts";
+import { isUserTableName, recordStatsDelta } from "./stats-store.ts";
 
 export function updateRows(input: {
   table: string;
   filter: JsonFilter;
   patch: Record<string, unknown>;
+  sideEffects?: boolean;
 }) {
+  const sideEffects = input.sideEffects ?? true;
   const table = requireTable(input.table);
-  const filter = input.filter;
+  const filter = resolveRowIdFilter(input.table, input.filter);
   if (!filter || Object.keys(filter).length === 0) {
     throw new Error("filter must be a non-empty object");
   }
   const patch = input.patch;
   const columns = getTableColumns(table);
+  const rowSchema = JSON.parse(table.schema_json) as JsonSchemaObject;
   const columnByName = new Map(columns.map((column) => [column.name, column]));
   for (const key of Object.keys(patch)) {
     if (!columnByName.has(key)) {
@@ -38,19 +49,7 @@ export function updateRows(input: {
 
   let changes = 0;
   for (const existing of matched) {
-    const merged: Record<string, unknown> = {};
-    for (const column of columns) {
-      const raw = existing[column.name];
-      if (column.jsonStored && typeof raw === "string") {
-        try {
-          merged[column.name] = JSON.parse(raw);
-        } catch {
-          merged[column.name] = raw;
-        }
-      } else {
-        merged[column.name] = raw;
-      }
-    }
+    const merged = decodeRow(existing, columns, rowSchema);
     Object.assign(merged, patch);
     validateRowAgainstSchema(table.name, table.schema_json, merged);
 
@@ -61,15 +60,24 @@ export function updateRows(input: {
     const setValues = setColumns.map((name) =>
       encodeCellValue(patch[name], columnByName.get(name)!),
     );
-    const updateSql = `UPDATE ${quoteIdentExport(table.name)} SET ${setSql} WHERE "id" = ?`;
+    const definition = parseTableDefinition(table);
+    const primaryKeySlugsList = primaryKeySlugs(definition);
+    const whereClause = primaryKeySlugsList
+      .map((slug) => `${quoteIdentExport(slug)} = ?`)
+      .join(" AND ");
+    const whereValues = primaryKeySlugsList.map((slug) => existing[slug]);
+    const updateSql = `UPDATE ${quoteIdentExport(table.name)} SET ${setSql} WHERE ${whereClause}`;
     const result = getDatabase()
       .query(updateSql)
-      .run(...asBindings([...setValues, existing.id]));
+      .run(...asBindings([...setValues, ...whereValues]));
     changes += result.changes;
   }
 
-  if (changes > 0) {
+  if (sideEffects && changes > 0) {
     notifyInvalidation(invalidationTagsForRowMutation(table.name));
+    if (isUserTableName(table.name)) {
+      recordStatsDelta({ updates: changes });
+    }
   }
 
   return { table: table.name, matched: matched.length, changes };

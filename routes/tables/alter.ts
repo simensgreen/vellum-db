@@ -8,6 +8,7 @@ import {
   AlterTableQuerySchema,
 } from "../../src/api/schemas/tables.ts";
 import { alterTable } from "../../src/core/table-ddl.ts";
+import type { TableDefinition } from "../../src/core/table/types.ts";
 import { handleRoute } from "../../src/core/route-http.ts";
 
 export const description = "Alter a structured table";
@@ -19,12 +20,20 @@ export async function POST(request: Request): Promise<Response> {
     const body = await parseRouteBody(request, AlterTableBodySchema);
     const alterInput: {
       table: string;
-      add?: Array<{ name: string; schema: unknown }>;
+      add?: Array<{
+        name: string;
+        slug: string;
+        column: TableDefinition["columns"][number];
+      }>;
       drop?: string[];
       scope?: string | null;
     } = {
       table: query.table,
-      add: body.add,
+      add: body.add?.map((entry) => ({
+        name: entry.name,
+        slug: entry.slug,
+        column: entry.column as TableDefinition["columns"][number],
+      })),
       drop: body.drop,
     };
     if (params.has("scope")) {

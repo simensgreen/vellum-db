@@ -1,4 +1,8 @@
-import { getTableColumns, listTables } from "./catalog.ts";
+import {
+  getTableColumns,
+  listTables,
+  parseTableDefinition,
+} from "./catalog.ts";
 
 export function listTablesView(input: {
   scope?: string | null;
@@ -16,7 +20,7 @@ export function listTablesView(input: {
     tables: page.tables.map((table) => ({
       name: table.name,
       scope: table.scope,
-      schema: JSON.parse(table.schema_json),
+      definition: parseTableDefinition(table),
       columns: getTableColumns(table),
       created_at: table.created_at,
       updated_at: table.updated_at,

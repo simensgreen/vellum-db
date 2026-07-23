@@ -1,11 +1,15 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "types": [],
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "vellum-db/*": ["../../src/*"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

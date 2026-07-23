@@ -10,6 +10,12 @@ import {
 import { GET as listTablesGet, POST as createTablePost } from "../routes/tables.ts";
 import { POST as alterTablePost } from "../routes/tables/alter.ts";
 import { GET as queryRowsGet } from "../routes/rows.ts";
+import { POST as commitRowsPost } from "../routes/rows/commit.ts";
+import { GET as statsGet } from "../routes/stats.ts";
+import { GET as exportTableGet } from "../routes/export.ts";
+import { POST as importTablePost } from "../routes/import.ts";
+import { tableDataTag } from "../apps/tables/src/sync-tags.ts";
+import { seedDevDashboardData } from "./seed-dev-dashboard.ts";
 
 const ROOT = join(import.meta.dir, "..");
 const APP_DIR = join(ROOT, "apps/tables");
@@ -30,9 +36,22 @@ const routeHandlers: Record<string, Partial<Record<string, RouteHandler>>> = {
   "/rows": {
     GET: queryRowsGet,
   },
+  "/rows/commit": {
+    POST: commitRowsPost,
+  },
+  "/stats": {
+    GET: statsGet,
+  },
+  "/export": {
+    GET: exportTableGet,
+  },
+  "/import": {
+    POST: importTablePost,
+  },
 };
 
 const reloadClients = new Set<ReadableStreamDefaultController<string>>();
+const syncClients = new Set<ReadableStreamDefaultController<string>>();
 let cssHref = "/dist/main.css";
 
 function broadcastReload(): void {
@@ -41,6 +60,21 @@ function broadcastReload(): void {
       client.enqueue("data: reload\n\n");
     } catch {
       reloadClients.delete(client);
+    }
+  }
+}
+
+function broadcastSync(tags: readonly string[]): void {
+  if (tags.length === 0) {
+    return;
+  }
+  const payload = JSON.stringify({ tags: [...tags] });
+  const message = `data: ${payload}\n\n`;
+  for (const client of syncClients) {
+    try {
+      client.enqueue(message);
+    } catch {
+      syncClients.delete(client);
     }
   }
 }
@@ -59,7 +93,23 @@ function devHtml(): string {
     <script>
       window.vellum = {
         fetch: (path, init) => fetch(path, init),
-        subscribe: () => () => {},
+        subscribe: (filter, callback) => {
+          const subscribedTags = new Set(filter.tags ?? []);
+          const source = new EventSource("/__dev/sync");
+          source.onmessage = (event) => {
+            try {
+              const payload = JSON.parse(event.data);
+              const eventTags = Array.isArray(payload.tags) ? payload.tags : [];
+              const matched = eventTags.some((tag) => subscribedTags.has(tag));
+              if (matched) {
+                callback({ tags: eventTags });
+              }
+            } catch {
+              /* ignore malformed sync events */
+            }
+          };
+          return () => source.close();
+        },
       };
     </script>
     <script type="module" src="/dist/main.js"></script>
@@ -88,7 +138,52 @@ async function dispatchApi(request: Request): Promise<Response | null> {
   const proxiedUrl = new URL(request.url);
   proxiedUrl.pathname = routePath;
   const proxiedRequest = new Request(proxiedUrl, request);
-  return handler(proxiedRequest);
+  const response = await handler(proxiedRequest);
+
+  if (
+    routePath === "/rows/commit" &&
+    request.method === "POST" &&
+    response.ok
+  ) {
+    const tableName = url.searchParams.get("table");
+    if (tableName) {
+      broadcastSync([tableDataTag(tableName)]);
+    }
+  }
+
+  if (
+    routePath === "/import" &&
+    request.method === "POST" &&
+    response.ok
+  ) {
+    const tableName = url.searchParams.get("table");
+    if (tableName) {
+      broadcastSync([tableDataTag(tableName)]);
+    }
+  }
+
+  if (
+    routePath === "/tables" &&
+    request.method === "POST" &&
+    response.ok
+  ) {
+    broadcastSync(["vellum-db:tables"]);
+  }
+
+  if (
+    routePath === "/tables/alter" &&
+    request.method === "POST" &&
+    response.ok
+  ) {
+    const tableName = url.searchParams.get("table");
+    broadcastSync(
+      tableName
+        ? ["vellum-db:tables", tableDataTag(tableName)]
+        : ["vellum-db:tables"],
+    );
+  }
+
+  return response;
 }
 
 async function buildApp(watch: boolean): Promise<void> {
@@ -107,6 +202,7 @@ async function buildApp(watch: boolean): Promise<void> {
     alias: {
       react: "preact/compat",
       "react-dom": "preact/compat",
+      "vellum-db": join(ROOT, "src"),
     },
     ...(watch
       ? {
@@ -146,6 +242,10 @@ function openDevDatabase(): string {
     parseConfig({ maxRowsPerQuery: 500, rawSqlMode: "select-only" }),
   );
   ensureMetaSchema();
+  if (process.env.DEV_SEED !== "0") {
+    seedDevDashboardData();
+    console.log("Dev dashboard seed data loaded (set DEV_SEED=0 to skip)");
+  }
   console.log("Dev database:", dir);
   return dir;
 }
@@ -176,6 +276,29 @@ Bun.serve({
         cancel() {
           if (clientController) {
             reloadClients.delete(clientController);
+          }
+        },
+      });
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      });
+    }
+
+    if (url.pathname === "/__dev/sync") {
+      let clientController: ReadableStreamDefaultController<string> | null = null;
+      const stream = new ReadableStream<string>({
+        start(controller) {
+          clientController = controller;
+          syncClients.add(controller);
+          controller.enqueue(": connected\n\n");
+        },
+        cancel() {
+          if (clientController) {
+            syncClients.delete(clientController);
           }
         },
       });

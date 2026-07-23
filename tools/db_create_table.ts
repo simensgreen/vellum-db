@@ -2,20 +2,17 @@ import type {
   ToolContext,
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
+import type { TableDefinition } from "../src/core/table/types.ts";
 import { createTable } from "../src/core/table-ddl.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
   type: "object",
   properties: {
-    name: {
-      type: "string",
-      description: "Table name ([a-z][a-z0-9_]*)",
-    },
-    schema: {
+    definition: {
       type: "object",
       description:
-        'JSON Schema object for row shape (type:"object", properties, optional required)',
+        "TableDefinition DSL (slug, name, columns with primaryKey and data types). slug becomes the table name.",
     },
     scope: {
       type: ["string", "null"],
@@ -23,12 +20,12 @@ const inputSchema = {
         "Optional scope label ([a-z][a-z0-9_]*). Use with db_list_tables scope filter.",
     },
   },
-  required: ["name", "schema"],
+  required: ["definition"],
 } as const;
 
 export default {
   description:
-    "Create a structured table from a JSON Schema. Prefer this over raw SQL. An id TEXT PRIMARY KEY (nanoid) is added automatically. Procedure: skill_load { skill: \"vellum-db-meta\" }.",
+    "Create a structured table from a TableDefinition DSL object. Prefer this over raw SQL. Procedure: skill_load { skill: \"vellum-db-meta\" }.",
   defaultRiskLevel: "medium" as const,
   category: "data",
   input_schema: inputSchema,
@@ -38,8 +35,7 @@ export default {
   ): Promise<ToolExecutionResult> {
     return runTool(input, inputSchema, (validated) =>
       createTable({
-        name: String(validated.name),
-        schema: validated.schema,
+        definition: validated.definition as TableDefinition,
         scope: validated.scope as string | null | undefined,
       }),
     );

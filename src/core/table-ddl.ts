@@ -3,31 +3,37 @@ import {
   createUserTable,
   dropUserTable,
   getTableColumns,
+  parseTableDefinition,
 } from "./catalog.ts";
+import type { TableDefinition } from "./table/types.ts";
 import { invalidationTagsForCatalogChange } from "./sync-tags.ts";
 import { notifyInvalidation } from "./sync.ts";
 
 export function createTable(input: {
-  name: string;
-  schema: unknown;
+  definition: TableDefinition;
   scope?: string | null;
 }) {
-  const table = createUserTable(input.name, input.schema, {
+  const table = createUserTable(input.definition, {
     scope: input.scope,
   });
   notifyInvalidation(invalidationTagsForCatalogChange(table.name));
+  const definition = parseTableDefinition(table);
   return {
     name: table.name,
     scope: table.scope,
-    schema: JSON.parse(table.schema_json),
-    columns: getTableColumns(table).map((column) => column.name),
+    definition,
+    columns: getTableColumns(table),
     created_at: table.created_at,
   };
 }
 
 export function alterTable(input: {
   table: string;
-  add?: Array<{ name: string; schema: unknown }>;
+  add?: Array<{
+    name: string;
+    slug: string;
+    column: TableDefinition["columns"][number];
+  }>;
   drop?: string[];
   scope?: string | null;
 }) {
@@ -43,8 +49,8 @@ export function alterTable(input: {
   return {
     name: table.name,
     scope: table.scope,
-    schema: JSON.parse(table.schema_json),
-    columns: getTableColumns(table).map((column) => column.name),
+    definition: parseTableDefinition(table),
+    columns: getTableColumns(table),
     updated_at: table.updated_at,
   };
 }

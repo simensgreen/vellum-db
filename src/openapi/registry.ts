@@ -1,27 +1,29 @@
 import "./zod.ts";
 import { OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
+import { z } from "../api/zod.ts";
 import {
   IoModeSchema,
   JsonFilterSchema,
   OnConflictSchema,
   RowRecordSchema,
   ScopeSchema,
-  TableJsonSchemaSchema,
 } from "../api/schemas/common.ts";
 import {
   AggregateRowsQuerySchema,
   DeleteRowsBodySchema,
   DeleteRowsQuerySchema,
+  InsertRowBodySchema,
   InsertRowQuerySchema,
   QueryRowsQuerySchema,
+  RowCommitBodySchema,
+  RowCommitQuerySchema,
   UpdateRowsBodySchema,
   UpdateRowsQuerySchema,
 } from "../api/schemas/rows.ts";
 import {
   AlterTableBodySchema,
   AlterTableQuerySchema,
-  CreateTableBodySchema,
-  CreateTableQuerySchema,
+  CreateTableScopeQuerySchema,
   DropTableQuerySchema,
   ListTablesQuerySchema,
 } from "../api/schemas/tables.ts";
@@ -34,22 +36,25 @@ import {
 } from "../api/schemas/saved-queries.ts";
 import {
   DumpTableQuerySchema,
+  ExportTableQuerySchema,
+  ImportTableQuerySchema,
   LoadTableQuerySchema,
 } from "../api/schemas/io.ts";
 import { ExecuteSqlBodySchema } from "../api/schemas/sql.ts";
+import { DatabaseStatsSchema, StatsQuerySchema } from "../api/schemas/stats.ts";
 import { errorResponses, responseSchemas, successResponses } from "./responses.ts";
 
 export function createOpenApiRegistry(): OpenAPIRegistry {
   const registry = new OpenAPIRegistry();
 
-  registry.register("Error", responseSchemas.ErrorSchema);
+  registry.register("Error", responseSchemas.ApiErrorSchema);
   registry.register("PaginatedMeta", responseSchemas.PaginatedMetaSchema);
   registry.register("TableSummary", responseSchemas.TableSummarySchema);
   registry.register("QueryResult", responseSchemas.QueryResultSchema);
   registry.register("OnConflict", OnConflictSchema);
   registry.register("IoMode", IoModeSchema);
   registry.register("JsonFilter", JsonFilterSchema);
-  registry.register("JsonSchema", TableJsonSchemaSchema);
+  registry.register("TableDefinition", responseSchemas.TableDefinitionSchema);
 
   registry.registerPath({
     method: "get",
@@ -80,10 +85,12 @@ export function createOpenApiRegistry(): OpenAPIRegistry {
     summary: "Create a structured table",
     tags: ["tables"],
     request: {
-      query: CreateTableQuerySchema.extend({ scope: ScopeSchema.optional() }),
+      query: CreateTableScopeQuerySchema,
       body: {
-        content: { "application/json": { schema: CreateTableBodySchema } },
-        description: "JSON Schema for row columns (excluding id)",
+        content: {
+          "application/json": { schema: responseSchemas.TableDefinitionSchema },
+        },
+        description: "TableDefinition DSL",
       },
     },
     responses: successResponses,
@@ -141,7 +148,7 @@ export function createOpenApiRegistry(): OpenAPIRegistry {
         content: {
           "application/json": {
             schema: RowRecordSchema.meta({
-              description: "Row fields (id optional; nanoid generated when omitted)",
+              description: "Row fields; primary key columns optional when defaults apply",
             }),
           },
         },
@@ -172,6 +179,21 @@ export function createOpenApiRegistry(): OpenAPIRegistry {
     request: {
       query: DeleteRowsQuerySchema,
       body: { content: { "application/json": { schema: DeleteRowsBodySchema } } },
+    },
+    responses: successResponses,
+  });
+
+  registry.registerPath({
+    method: "post",
+    path: "/rows/commit",
+    operationId: "commitRows",
+    summary: "Apply row changes in one transaction",
+    description:
+      "Atomically apply updates, inserts, and deletes for a single table. All changes commit or none do.",
+    tags: ["rows"],
+    request: {
+      query: RowCommitQuerySchema,
+      body: { content: { "application/json": { schema: RowCommitBodySchema } } },
     },
     responses: successResponses,
   });
@@ -259,6 +281,52 @@ export function createOpenApiRegistry(): OpenAPIRegistry {
   });
 
   registry.registerPath({
+    method: "get",
+    path: "/export",
+    operationId: "exportTable",
+    summary: "Download table rows as a file",
+    tags: ["io"],
+    request: { query: ExportTableQuerySchema },
+    responses: {
+      200: {
+        description: "Table export file",
+        content: {
+          "application/octet-stream": {
+            schema: z.string().openapi({ format: "binary" }),
+          },
+        },
+      },
+      ...errorResponses,
+    },
+  });
+
+  registry.registerPath({
+    method: "post",
+    path: "/import",
+    operationId: "importTable",
+    summary: "Upload a file and load rows into a table",
+    tags: ["io"],
+    request: { query: ImportTableQuerySchema },
+    responses: successResponses,
+  });
+
+  registry.registerPath({
+    method: "get",
+    path: "/stats",
+    operationId: "getDatabaseStats",
+    summary: "Database overview statistics",
+    tags: ["stats"],
+    request: { query: StatsQuerySchema },
+    responses: {
+      200: {
+        description: "Overview stats and time buckets",
+        content: { "application/json": { schema: DatabaseStatsSchema } },
+      },
+      ...errorResponses,
+    },
+  });
+
+  registry.registerPath({
     method: "post",
     path: "/sql",
     operationId: "executeSql",
@@ -280,11 +348,15 @@ export const registeredRoutePaths = [
   "/tables/alter",
   "/tables/drop",
   "/rows",
+  "/rows/commit",
   "/aggregate",
   "/saved-queries",
   "/saved-queries/run",
   "/saved-queries/delete",
   "/load",
   "/dump",
+  "/export",
+  "/import",
   "/sql",
+  "/stats",
 ] as const;

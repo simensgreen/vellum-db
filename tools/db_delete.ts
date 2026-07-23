@@ -12,7 +12,8 @@ const inputSchema = {
     table: { type: "string" },
     filter: {
       type: "object",
-      description: "JSON filter selecting rows to delete (required, non-empty)",
+      description:
+        "JSON filter selecting rows to delete (required, non-empty; keys = column slugs)",
     },
   },
   required: ["table", "filter"],

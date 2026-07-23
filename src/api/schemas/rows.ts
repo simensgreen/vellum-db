@@ -44,6 +44,30 @@ export const DeleteRowsBodySchema = z.object({
   filter: JsonFilterSchema,
 });
 
+const NonEmptyRowPatchSchema = RowRecordSchema.refine(
+  (patch) => Object.keys(patch).length > 0,
+  { message: "patch must contain at least one field" },
+);
+
+export const RowCommitQuerySchema = z.object({
+  table: TableNameSchema,
+});
+
+export const RowCommitBodySchema = z
+  .object({
+    insert: z.array(RowRecordSchema).default([]),
+    update: z
+      .record(z.string().min(1), NonEmptyRowPatchSchema)
+      .default({}),
+    delete: z.array(z.string().min(1)).default([]),
+  })
+  .refine(
+    (body) =>
+      body.insert.length + Object.keys(body.update).length + body.delete.length >
+      0,
+    { message: "commit requires at least one change" },
+  );
+
 export const AggregateRowsQuerySchema = PaginationQuerySchema.extend({
   table: TableNameSchema,
   metrics: requiredJsonQueryString("metrics").pipe(

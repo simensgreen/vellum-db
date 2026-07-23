@@ -27,10 +27,18 @@ import {
 } from "../src/core/saved-queries.ts";
 import { guardRawSql } from "../src/sql-guard.ts";
 import { validateRowAgainstSchema } from "../src/schema-validate.ts";
-import { dumpTableToFile, loadTableFromFile } from "../src/core/table-io.ts";
+import { dumpTableToFile, ioModeFromFilename, loadTableFromFile } from "../src/core/table-io.ts";
 import { insertTableRow } from "../src/core/insert.ts";
 import { executeAggregateDefinition } from "../src/core/aggregate.ts";
 import { executeQueryDefinition } from "../src/core/query.ts";
+import {
+  alphaTasksDefinition,
+  betaNotesDefinition,
+  itemsDefinition,
+  orphanDefinition,
+  scratchDefinition,
+  tasksDefinition,
+} from "./fixtures/table-definitions.ts";
 
 function withTempDb(): string {
   const dir = mkdtempSync(join(tmpdir(), "vellum-db-"));
@@ -47,21 +55,21 @@ describe("vellum-db core", () => {
   test("create insert query aggregate saved query", () => {
     const dir = withTempDb();
     try {
-      createUserTable("tasks", {
-        type: "object",
-        properties: {
-          title: { type: "string" },
-          status: { type: "string" },
-          points: { type: "integer" },
-        },
-        required: ["title", "status", "points"],
-      });
+      createUserTable(tasksDefinition);
 
       expect(listTables().tables.map((table) => table.name)).toEqual(["tasks"]);
 
       const table = listTables().tables[0]!;
       const columns = getTableColumns(table);
+      expect(columns.map((column) => column.name)).toEqual([
+        "task_id",
+        "title",
+        "status",
+        "points",
+      ]);
+
       validateRowAgainstSchema(table.name, table.schema_json, {
+        task_id: "task-1",
         title: "Ship plugin",
         status: "open",
         points: 3,
@@ -81,7 +89,17 @@ describe("vellum-db core", () => {
         order: [{ column: "points", direction: "desc" }],
       });
       expect(queried.count).toBe(2);
+      expect(queried.total_count).toBe(2);
       expect(queried.rows[0]?.title).toBe("Ship plugin");
+
+      const paged = executeQueryDefinition({
+        table: "tasks",
+        limit: 1,
+        offset: 0,
+      });
+      expect(paged.count).toBe(1);
+      expect(paged.total_count).toBe(3);
+      expect(paged.has_more).toBe(true);
 
       const aggregated = executeAggregateDefinition({
         table: "tasks",
@@ -113,7 +131,17 @@ describe("vellum-db core", () => {
 
       alterUserTable({
         table: "tasks",
-        add: [{ name: "owner", schema: { type: "string" } }],
+        add: [
+          {
+            name: "Owner",
+            slug: "owner",
+            column: {
+              name: "Owner",
+              slug: "owner",
+              data: { type: "str" },
+            },
+          },
+        ],
       });
       expect(
         getTableColumns(listTables().tables[0]!).map((column) => column.name),
@@ -185,11 +213,7 @@ describe("vellum-db core", () => {
         }),
       );
       ensureMetaSchema();
-      createUserTable("scratch", {
-        type: "object",
-        properties: { note: { type: "string" } },
-        required: ["note"],
-      });
+      createUserTable(scratchDefinition);
       expect(() => dropUserTable("scratch")).toThrow(/allowDropTable/);
       closeDatabase();
 
@@ -212,29 +236,9 @@ describe("vellum-db core", () => {
   test("scope filter and list pagination", () => {
     const dir = withTempDb();
     try {
-      const alpha = createUserTable(
-        "alpha_tasks",
-        {
-          type: "object",
-          properties: { title: { type: "string" } },
-          required: ["title"],
-        },
-        { scope: "project_a" },
-      );
-      createUserTable(
-        "beta_notes",
-        {
-          type: "object",
-          properties: { body: { type: "string" } },
-          required: ["body"],
-        },
-        { scope: "project_b" },
-      );
-      createUserTable("orphan", {
-        type: "object",
-        properties: { note: { type: "string" } },
-        required: ["note"],
-      });
+      const alpha = createUserTable(alphaTasksDefinition, { scope: "project_a" });
+      createUserTable(betaNotesDefinition, { scope: "project_b" });
+      createUserTable(orphanDefinition);
 
       expect(
         listTables({ scope: "project_a" }).tables.map((table) => table.name),
@@ -263,7 +267,7 @@ describe("vellum-db core", () => {
         table: "alpha_tasks",
         limit: 2,
         offset: 0,
-        order: [{ column: "id", direction: "asc" }],
+        order: [{ column: "task_id", direction: "asc" }],
       });
       expect(queried.count).toBe(2);
       expect(queried.has_more).toBe(true);
@@ -274,18 +278,10 @@ describe("vellum-db core", () => {
     }
   });
 
-  test("db_dump and db_load round-trip json csv jsonl xls", () => {
+  test("db_dump and db_load round-trip json csv jsonl xlsx", () => {
     const dir = withTempDb();
     try {
-      createUserTable("items", {
-        type: "object",
-        properties: {
-          title: { type: "string" },
-          points: { type: "integer" },
-          active: { type: "boolean" },
-        },
-        required: ["title", "points", "active"],
-      });
+      createUserTable(itemsDefinition);
       const itemsTable = listTables().tables.find(
         (entry) => entry.name === "items",
       )!;
@@ -325,11 +321,11 @@ describe("vellum-db core", () => {
           .inserted,
       ).toBe(2);
 
-      const xlsPath = join(dir, "items.xlsx");
-      dumpTableToFile({ table: "items", path: xlsPath, mode: "xls" });
+      const xlsxPath = join(dir, "items.xlsx");
+      dumpTableToFile({ table: "items", path: xlsxPath, mode: "xlsx" });
       getDatabase().run(`DELETE FROM "items"`);
       expect(
-        loadTableFromFile({ table: "items", path: xlsPath, mode: "xls" })
+        loadTableFromFile({ table: "items", path: xlsxPath, mode: "xlsx" })
           .inserted,
       ).toBe(2);
 
@@ -342,24 +338,29 @@ describe("vellum-db core", () => {
     }
   });
 
-  test("on_conflict ignore and replace by id", () => {
+  test("ioModeFromFilename maps supported extensions", () => {
+    expect(ioModeFromFilename("export.csv")).toBe("csv");
+    expect(ioModeFromFilename("export.JSON")).toBe("json");
+    expect(ioModeFromFilename("export.jsonl")).toBe("jsonl");
+    expect(ioModeFromFilename("export.xlsx")).toBe("xlsx");
+    expect(ioModeFromFilename("legacy.xls")).toBe("xlsx");
+    expect(() => ioModeFromFilename("no-extension")).toThrow(
+      /Cannot detect format/,
+    );
+    expect(() => ioModeFromFilename("data.txt")).toThrow(/Unsupported file extension/);
+  });
+
+  test("on_conflict ignore and replace by primary key", () => {
     const dir = withTempDb();
     try {
-      const table = createUserTable("items", {
-        type: "object",
-        properties: {
-          title: { type: "string" },
-          points: { type: "integer" },
-        },
-        required: ["title", "points"],
-      });
-      const first = insertTableRow(table, { title: "one", points: 1 });
+      const table = createUserTable(itemsDefinition);
+      const first = insertTableRow(table, { title: "one", points: 1, active: true });
       expect(first.outcome).toBe("inserted");
       expect(first.id).toMatch(/^[A-Za-z0-9_-]{21}$/);
 
       const ignored = insertTableRow(
         table,
-        { id: first.id, title: "one-b", points: 9 },
+        { item_id: first.id, title: "one-b", points: 9, active: false },
         "ignore",
       );
       expect(ignored.outcome).toBe("ignored");
@@ -367,21 +368,25 @@ describe("vellum-db core", () => {
 
       const replaced = insertTableRow(
         table,
-        { id: first.id, title: "one-c", points: 3 },
+        { item_id: first.id, title: "one-c", points: 3, active: true },
         "replace",
       );
       expect(replaced.outcome).toBe("replaced");
 
       const row = getDatabase()
         .query<{ title: string; points: number }, [string]>(
-          `SELECT title, points FROM "items" WHERE id = ?`,
+          `SELECT title, points FROM "items" WHERE item_id = ?`,
         )
         .get(first.id)!;
       expect(row.title).toBe("one-c");
       expect(row.points).toBe(3);
 
       expect(() =>
-        insertTableRow(table, { id: first.id, title: "fail", points: 1 }, "abort"),
+        insertTableRow(
+          table,
+          { item_id: first.id, title: "fail", points: 1, active: true },
+          "abort",
+        ),
       ).toThrow();
 
       const exportPath = join(dir, "reload.json");

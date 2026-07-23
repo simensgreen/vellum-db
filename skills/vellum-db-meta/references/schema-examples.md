@@ -1,111 +1,141 @@
-# JSON Schema examples for vellum-db tables
+# TableDefinition DSL examples for vellum-db
 
-Reference patterns for `db_create_table` and `db_alter_table` `add` entries. All table schemas must be `type: "object"` with non-empty `properties`. Never define `id`.
+Reference patterns for `db_create_table` and `db_alter_table`. All tables use the **TableDefinition DSL** — no JSON Schema create path, no implicit `id`.
 
-## Minimal required string table
+Primary key is declared per column with `"primaryKey": true` (composite keys: mark multiple columns).
+
+## Minimal table with nanoid primary key
 
 ```json
 {
-  "type": "object",
-  "properties": {
-    "label": { "type": "string", "minLength": 1 }
-  },
-  "required": ["label"]
+  "slug": "tasks",
+  "name": "Tasks",
+  "columns": [
+    {
+      "name": "Task ID",
+      "slug": "task_id",
+      "primaryKey": true,
+      "data": { "type": "nanoid", "default": "random" }
+    },
+    {
+      "name": "Title",
+      "slug": "title",
+      "data": { "type": "str", "minLen": 1 }
+    }
+  ]
 }
 ```
-
-Maps to: `label TEXT NOT NULL` plus auto `id` (nanoid TEXT PRIMARY KEY).
 
 ## Mixed scalar types
 
 ```json
 {
-  "type": "object",
-  "properties": {
-    "name": { "type": "string" },
-    "count": { "type": "integer", "minimum": 0 },
-    "score": { "type": "number" },
-    "active": { "type": "boolean" }
-  },
-  "required": ["name"]
-}
-```
-
-Maps to: `name TEXT NOT NULL`, `count INTEGER`, `score REAL`, `active INTEGER` (0/1).
-
-## Nested object (JSON column)
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "event": { "type": "string" },
-    "payload": {
-      "type": "object",
-      "properties": {
-        "source": { "type": "string" },
-        "meta": { "type": "object" }
-      },
-      "additionalProperties": true
-    }
-  },
-  "required": ["event"]
-}
-```
-
-`payload` maps to `TEXT` with JSON storage; validate nested shape at insert time via row validation in **`vellum-db`**.
-
-## Array column
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "title": { "type": "string" },
-    "tags": {
-      "type": "array",
-      "items": { "type": "string" }
-    }
-  },
-  "required": ["title"]
-}
-```
-
-`tags` maps to `TEXT` (JSON array string).
-
-## Enum and format hints
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "status": {
-      "type": "string",
-      "enum": ["draft", "published", "archived"]
+  "slug": "metrics",
+  "name": "Metrics",
+  "columns": [
+    {
+      "name": "Metric ID",
+      "slug": "metric_id",
+      "primaryKey": true,
+      "data": { "type": "nanoid", "default": "random" }
     },
-    "published_at": {
-      "type": "string",
-      "format": "date-time"
-    }
-  },
-  "required": ["status"]
+    { "name": "Name", "slug": "name", "data": { "type": "str" } },
+    { "name": "Count", "slug": "count", "data": { "type": "int", "min": 0 } },
+    { "name": "Score", "slug": "score", "data": { "type": "float" } },
+    { "name": "Active", "slug": "active", "data": { "type": "bool", "default": false } }
+  ]
 }
 ```
 
-Enum and `format` are JSON Schema constraints only; SQLite column remains `TEXT`.
-
-## Alter: add nullable column
-
-Use in `db_alter_table.add`:
+## Enum and timestamp
 
 ```json
 {
-  "name": "notes",
-  "schema": { "type": "string" }
+  "slug": "posts",
+  "name": "Posts",
+  "columns": [
+    {
+      "name": "Post ID",
+      "slug": "post_id",
+      "primaryKey": true,
+      "data": { "type": "nanoid", "default": "random" }
+    },
+    {
+      "name": "Status",
+      "slug": "status",
+      "data": { "type": "enum", "variants": ["draft", "published", "archived"], "default": 0 }
+    },
+    {
+      "name": "Published at",
+      "slug": "published_at",
+      "data": { "type": "timestamp", "default": "now" }
+    }
+  ]
 }
 ```
 
-New columns are nullable in SQLite even if you add them to `required` in a hand-edited schema — prefer defining `required` correctly at create time.
+## Reference column
+
+```json
+{
+  "slug": "comments",
+  "name": "Comments",
+  "columns": [
+    {
+      "name": "Comment ID",
+      "slug": "comment_id",
+      "primaryKey": true,
+      "data": { "type": "nanoid", "default": "random" }
+    },
+    {
+      "name": "Post",
+      "slug": "post_id",
+      "data": {
+        "type": "ref",
+        "table": "posts",
+        "column": "post_id",
+        "onDelete": "cascade"
+      }
+    },
+    { "name": "Body", "slug": "body", "data": { "type": "str" } }
+  ]
+}
+```
+
+`ref.column` must reference a column with `"primaryKey": true` on the target table.
+
+## Composite primary key
+
+```json
+{
+  "slug": "memberships",
+  "name": "Memberships",
+  "columns": [
+    { "name": "User", "slug": "user_id", "primaryKey": true, "data": { "type": "str" } },
+    { "name": "Team", "slug": "team_id", "primaryKey": true, "data": { "type": "str" } },
+    { "name": "Role", "slug": "role", "data": { "type": "str" } }
+  ]
+}
+```
+
+## Alter: add column
+
+```json
+{
+  "table": "tasks",
+  "add": [
+    {
+      "name": "Owner",
+      "slug": "owner",
+      "column": {
+        "name": "Owner",
+        "slug": "owner",
+        "data": { "type": "str" }
+      }
+    }
+  ]
+}
+```
 
 ## Alter: drop column
 
@@ -116,13 +146,13 @@ New columns are nullable in SQLite even if you add them to `required` in a hand-
 }
 ```
 
-Cannot drop `id` or the last remaining user column. Operation rebuilds the table; back up or export rows first via **`vellum-db`** if data matters.
+Cannot drop primary key columns. Dropping user columns rebuilds the table; export first if data matters.
 
-## Invalid patterns (will fail)
+## Invalid patterns
 
 | Pattern | Why |
 | --- | --- |
-| `"properties": { "id": … }` | `id` is reserved |
-| `"properties": {}` | Need at least one property |
-| Table name `_internal` | Leading `_` reserved |
-| Property name `UserName` | Must be lowercase `[a-z][a-z0-9_]*` |
+| No column with `primaryKey: true` | At least one PK column required |
+| `bool` without `default` | Bool columns require `default: true` or `false` |
+| `ref` without `column` | Reference target PK column is required |
+| Table slug `_internal` | Leading `_` reserved for meta tables |
