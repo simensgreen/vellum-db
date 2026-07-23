@@ -31,7 +31,7 @@ This repository root **is** the plugin (`package.json` + `hooks/` + `tools/` + `
 | `src/api/` | Zod request schemas + `parse-request.ts` (shared by routes and OpenAPI) |
 | `src/openapi/` | `@asteasolutions/zod-to-openapi` registry → `openapi.json` |
 | `openapi.json` | Generated REST spec (commit after route changes) |
-| `apps/tables/` | Read-only table viewer (`plugins~vellum-db~tables`) |
+| `apps/tables/` | Database app UI (`plugins~vellum-db~tables`; display name **Database**) |
 | `src/core/` | Domain logic shared by tools and routes |
 | `src/core/sync-tags.ts` | Invalidation tag constants + builders (canonical) |
 | `skills/vellum-db/` | Query/analyze procedures + `references/` |
@@ -61,7 +61,10 @@ bunx tsc --noEmit
 bunx tsc --noEmit -p apps/tables
 bun test
 bun run openapi   # manual regen; pre-commit does this for API changes
+bun run dev:app   # Tables app UI: http://localhost:5173 (temp SQLite + route proxy)
 ```
+
+`bun run dev:app` serves the Database app with hot reload, mock `window.vellum.fetch`, and the same REST handlers as production (`/v1/x/plugins/vellum-db/...`). Card preview UI: `http://localhost:5173/?preview=1`.
 
 `bun install` sets local `core.hooksPath` to `.githooks`. Pre-commit runs `bun run openapi` and stages `openapi.json` when the commit includes changes under `routes/`, `src/api/`, or `src/openapi/`.
 
@@ -77,6 +80,8 @@ bun run openapi   # manual regen; pre-commit does this for API changes
 - Row `id` is a nanoid string (`TEXT PRIMARY KEY`), generated on insert when omitted.
 - **Core** owns mutation invalidation via `src/core/sync.ts` + `src/core/sync-tags.ts` (not routes, not tools).
 - Vellum app bundler rejects imports outside `apps/<name>/` (`validateImportPaths` in vellum-assistant `app-compiler.ts`). Mirror `src/core/sync-tags.ts` byte-identical to `apps/tables/src/sync-tags.ts`; `tests/sync-tags-parity.test.ts` enforces this.
+- Database app display name is **Database** (UI title/header only; app id stays `plugins~vellum-db~tables`). Use host `--v-*` tokens and `.v-*` classes; layout-only CSS in `apps/tables/src/styles.css`. Vendored sandbox CSS: `apps/tables/vendor/vellum-design-system.css`; Figma palette bridge: `apps/tables/src/vellum-theme-bridge.css` (matches `@vellumai/design-library` tokens).
+- Library card preview: detect via `isCardPreview()` (`window.vellum` without `fetch`); render static `CardPreview` — no API calls in card mode.
 - REST reads: query params (JSON fields URL-encoded). REST mutations: table/name in query, payload in JSON body.
 - REST validation: `src/api/schemas/` + `parseRouteQuery` / `parseRouteBody`; OpenAPI imports the same schemas.
 - Edit request schemas in `src/api/schemas/`; pre-commit refreshes `openapi.json` (or run `bun run openapi` manually).
@@ -89,6 +94,7 @@ bun run openapi   # manual regen; pre-commit does this for API changes
 - Put durable state outside `data/` / `pluginStorageDir`.
 - Cross-import between `tools/` and `routes/` (both call `src/core/` only).
 - Commit `apps/**/dist/` (watcher-generated).
+- Commit `apps/**/.dev/` (local dev harness output).
 
 ## Dependencies (host does not install them)
 

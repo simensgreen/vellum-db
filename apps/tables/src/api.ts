@@ -1,10 +1,19 @@
+import { vellumFetch } from "./platform/bridge.ts";
+
 const API_PREFIX = "/v1/x/plugins/vellum-db";
+
+export type ColumnSpec = {
+  name: string;
+  sqlType: "TEXT" | "INTEGER" | "REAL";
+  notNull: boolean;
+  jsonStored: boolean;
+};
 
 export type TableSummary = {
   name: string;
   scope: string | null;
   schema: unknown;
-  columns: Array<{ name: string; sqlType: string; notNull: boolean; jsonStored: boolean }>;
+  columns: ColumnSpec[];
   created_at: string;
   updated_at: string;
 };
@@ -26,23 +35,11 @@ export type RowsResponse = {
   rows: Record<string, unknown>[];
 };
 
-declare global {
-  interface Window {
-    vellum?: {
-      fetch: (path: string, options?: RequestInit) => Promise<Response>;
-      subscribe: (
-        filter: { tags: readonly string[] },
-        callback: (event: { tags?: string[] }) => void,
-      ) => () => void;
-    };
-  }
-}
-
-function vellumFetch(path: string): Promise<Response> {
-  if (!window.vellum?.fetch) {
-    return Promise.reject(new Error("window.vellum.fetch is unavailable"));
-  }
-  return window.vellum.fetch(path);
+async function readError(response: Response): Promise<string> {
+  const body = (await response.json().catch(() => ({}))) as {
+    error?: string;
+  };
+  return typeof body.error === "string" ? body.error : `HTTP ${response.status}`;
 }
 
 export async function fetchTables(
@@ -53,10 +50,7 @@ export async function fetchTables(
     `${API_PREFIX}/tables?limit=${limit}&offset=${offset}`,
   );
   if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new Error(
-      typeof body.error === "string" ? body.error : `HTTP ${response.status}`,
-    );
+    throw new Error(await readError(response));
   }
   return response.json() as Promise<TablesListResponse>;
 }
@@ -70,10 +64,59 @@ export async function fetchRows(
     `${API_PREFIX}/rows?table=${encodeURIComponent(tableName)}&limit=${limit}&offset=${offset}`,
   );
   if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new Error(
-      typeof body.error === "string" ? body.error : `HTTP ${response.status}`,
-    );
+    throw new Error(await readError(response));
   }
   return response.json() as Promise<RowsResponse>;
+}
+
+export async function createTable(input: {
+  name: string;
+  schema: unknown;
+  scope?: string;
+}): Promise<unknown> {
+  const params = new URLSearchParams({ name: input.name });
+  if (input.scope) {
+    params.set("scope", input.scope);
+  }
+  const response = await vellumFetch(`${API_PREFIX}/tables?${params}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input.schema),
+  });
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return response.json();
+}
+
+export async function alterTable(input: {
+  table: string;
+  add?: Array<{ name: string; schema: unknown }>;
+  drop?: string[];
+  scope?: string | null;
+}): Promise<unknown> {
+  const params = new URLSearchParams({ table: input.table });
+  if (input.scope !== undefined) {
+    if (input.scope === null) {
+      params.set("scope", "");
+    } else {
+      params.set("scope", input.scope);
+    }
+  }
+  const body: Record<string, unknown> = {};
+  if (input.add && input.add.length > 0) {
+    body.add = input.add;
+  }
+  if (input.drop && input.drop.length > 0) {
+    body.drop = input.drop;
+  }
+  const response = await vellumFetch(`${API_PREFIX}/tables/alter?${params}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return response.json();
 }

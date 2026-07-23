@@ -50,9 +50,21 @@ Domain skills should depend on these: spell out table names, schemas, and proced
 
 OpenAPI 3.1 spec: [`openapi.json`](./openapi.json) (generated via [`@asteasolutions/zod-to-openapi`](https://github.com/asteasolutions/zod-to-openapi) — `bun run openapi`). Base URL: `/v1/x/plugins/vellum-db/`; auth via Vellum gateway (`settings.read`).
 
-## Tables app
+## Database app
 
-Read-only viewer: app id `plugins~vellum-db~tables`. Uses `window.vellum.fetch` against the routes above and `window.vellum.subscribe` with tags from `sync-tags.ts` for live refresh.
+App id `plugins~vellum-db~tables` (directory `apps/tables/`). UI display name: **Database**.
+
+- Browse tables and paginated rows; create tables and alter schema (visual column editor or advanced JSON).
+- Uses `window.vellum.fetch` against the REST routes and `window.vellum.subscribe` with tags from `sync-tags.ts` for live refresh.
+- Library card preview renders a static table icon when the host omits the fetch proxy (`isCardPreview()`).
+
+Local UI dev (no Vellum restart):
+
+```bash
+bun run dev:app
+```
+
+Open `http://localhost:5173`. Card preview mock: `http://localhost:5173/?preview=1`.
 
 ## Design notes
 
@@ -103,6 +115,7 @@ bun install
 bunx tsc --noEmit
 bunx tsc --noEmit -p apps/tables
 bun test
+bun run dev:app   # Database app UI at http://localhost:5173
 ```
 
 Pre-commit hook (enabled by `bun install`) regenerates `openapi.json` when you commit REST/API schema changes.

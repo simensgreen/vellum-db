@@ -21,6 +21,7 @@
     "zod": "^4.4.3"
   },
   "scripts": {
+    "dev:app": "bun scripts/dev-tables-app.ts",
     "openapi": "bun scripts/generate-openapi.ts",
     "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true"
   },
