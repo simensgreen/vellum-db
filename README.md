@@ -125,7 +125,7 @@ Browse more servers: [MCP Registry](https://registry.modelcontextprotocol.io/).
 
 ## Config
 
-See `config.json` and [AGENTS.md](./AGENTS.md) for keys (`maxRowsPerQuery`, `rawSqlMode`, `databasePath`, `allowDropTable`) and layout for contributors.
+See `config.json` and [AGENTS.md](./AGENTS.md) for keys (`maxRowsPerQuery`, `rawSqlMode`, `allowDropTable`) and layout for contributors.
 
 ## Install (Vellum workspace)
 

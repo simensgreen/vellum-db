@@ -19,7 +19,7 @@ const init: PluginHookFn<PluginInitContext> = async (ctx) => {
         {
             maxRowsPerQuery: config.maxRowsPerQuery,
             rawSqlMode: config.rawSqlMode,
-            databasePath: getDatabasePath(),
+            sqlitePath: getDatabasePath(),
             workspaceDir: getWorkspaceDir(),
             pluginStorageDir: ctx.pluginStorageDir
         },

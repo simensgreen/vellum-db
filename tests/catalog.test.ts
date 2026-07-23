@@ -186,21 +186,19 @@ describe("vellum-db core", () => {
         }
     })
 
-    test("databasePath relative under storage dir", () => {
+    test("database file is always pluginStorageDir/vellum-db.sqlite", () => {
         const dir = mkdtempSync(join(tmpdir(), "vellum-db-"))
         try {
             openDatabase(
                 dir,
                 parseConfig({
                     maxRowsPerQuery: 100,
-                    rawSqlMode: "select-only",
-                    databasePath: "custom/store.sqlite"
+                    rawSqlMode: "select-only"
                 })
             )
             ensureMetaSchema()
-            const databasePath = getDatabasePath()
-            expect(databasePath.endsWith(join("custom", "store.sqlite"))).toBe(true)
-            expect(existsSync(databasePath)).toBe(true)
+            expect(getDatabasePath()).toBe(join(dir, "vellum-db.sqlite"))
+            expect(existsSync(getDatabasePath())).toBe(true)
         } finally {
             closeDatabase()
             rmSync(dir, { recursive: true, force: true })

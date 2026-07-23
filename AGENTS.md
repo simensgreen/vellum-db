@@ -17,7 +17,7 @@ This repository root **is** the plugin (`package.json` + `hooks/` + `tools/` + `
 | Tables app | Preact (`apps/tables/`) |
 | Lint / format | Biome (`biome.json`; `bun run lint`) |
 | Runtime | **Bun** `>=1.2.0` only (`engines.bun` in `package.json`; Vellum host; `bun:sqlite`, `bun test`) — not Node |
-| Plugin contract | `@vellumai/plugin-api` peer `^0.8.0` (also `devDependency` for local `tsc`) |
+| Plugin contract | `@vellumai/plugin-api` peer `>=0.8.0` (also exact `devDependency` for local `tsc`) |
 
 ## Layout
 
@@ -54,7 +54,6 @@ Data is **workspace-global** (not per-conversation), so there is no `conversatio
 | --- | --- |
 | `maxRowsPerQuery` | Cap for query/aggregate/`db_sql` result rows |
 | `rawSqlMode` | `select-only` — guarded SELECT only; `on` — any single statement; `off` — `db_sql` disabled |
-| `databasePath` | `null`/omit → `pluginStorageDir/vellum-db.sqlite`; relative → under `pluginStorageDir`; absolute → that file |
 | `allowDropTable` | `false` (default) — migration/API `drop` rejects; `true` — allow DROP TABLE + delete `_tables` row |
 | `statsRetentionDays` | Days of `_stats` daily history to keep (UTC epoch days). Default **30** when omitted. |
 

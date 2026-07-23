@@ -1,6 +1,5 @@
 {
   "maxRowsPerQuery": 50,
   "rawSqlMode": "on",
-  "databasePath": null,
   "allowDropTable": false
 }

@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite"
-import { mkdirSync } from "node:fs"
-import { basename, dirname, isAbsolute, join, resolve } from "node:path"
+import { existsSync, mkdirSync, statSync } from "node:fs"
+import { basename, dirname, join, resolve } from "node:path"
 
 let database: Database | undefined
 let storageDir: string | undefined
@@ -10,8 +10,6 @@ let resolvedDatabasePath: string | undefined
 export type PluginConfig = {
     maxRowsPerQuery: number
     rawSqlMode: "select-only" | "off" | "on"
-    /** Relative to pluginStorageDir, or absolute. Omit for data/vellum-db.sqlite */
-    databasePath?: string
     allowDropTable: boolean
     /** Days of _stats history to keep (UTC calendar days). */
     statsRetentionDays: number
@@ -40,16 +38,6 @@ export function parseConfig(raw: unknown): PluginConfig {
         source.rawSqlMode === "on"
             ? source.rawSqlMode
             : DEFAULT_CONFIG.rawSqlMode
-    let databasePath: string | undefined
-    if (typeof source.databasePath === "string") {
-        const trimmed = source.databasePath.trim()
-        if (trimmed.length === 0) {
-            throw new Error("config.databasePath must be non-empty when set")
-        }
-        databasePath = trimmed
-    } else if (source.databasePath !== undefined && source.databasePath !== null) {
-        throw new Error("config.databasePath must be a string, null, or omitted")
-    }
     const allowDropTable =
         typeof source.allowDropTable === "boolean"
             ? source.allowDropTable
@@ -63,20 +51,30 @@ export function parseConfig(raw: unknown): PluginConfig {
     return {
         maxRowsPerQuery,
         rawSqlMode,
-        ...(databasePath !== undefined ? { databasePath } : {}),
         allowDropTable,
         statsRetentionDays
     }
 }
 
-export function resolveDatabasePath(pluginStorageDir: string, config: PluginConfig): string {
-    if (!config.databasePath) {
-        return join(pluginStorageDir, "vellum-db.sqlite")
+const DATABASE_FILE_NAME = "vellum-db.sqlite"
+const DEFAULT_BUSY_TIMEOUT_MS = 5_000
+
+export function databaseFilePath(pluginStorageDir: string): string {
+    return join(pluginStorageDir, DATABASE_FILE_NAME)
+}
+
+/** On-disk size of the SQLite database file. */
+export function databaseOnDiskBytes(sqlitePath: string): number {
+    if (!existsSync(sqlitePath)) {
+        return 0
     }
-    if (isAbsolute(config.databasePath)) {
-        return config.databasePath
-    }
-    return resolve(pluginStorageDir, config.databasePath)
+    return statSync(sqlitePath).size
+}
+
+function applyDatabasePragmas(database: Database): void {
+    database.run(`PRAGMA busy_timeout = ${DEFAULT_BUSY_TIMEOUT_MS}`)
+    database.run("PRAGMA journal_mode = DELETE")
+    database.run("PRAGMA foreign_keys = ON")
 }
 
 /**
@@ -114,12 +112,11 @@ export function openDatabase(
         ? resolve(options.workspaceDir)
         : resolveWorkspaceDir(pluginStorageDir)
     pluginConfig = config
-    const databasePath = resolveDatabasePath(pluginStorageDir, config)
-    mkdirSync(dirname(databasePath), { recursive: true })
-    resolvedDatabasePath = databasePath
-    database = new Database(databasePath, { create: true })
-    database.run("PRAGMA journal_mode = WAL;")
-    database.run("PRAGMA foreign_keys = ON;")
+    const sqlitePath = databaseFilePath(pluginStorageDir)
+    mkdirSync(dirname(sqlitePath), { recursive: true })
+    resolvedDatabasePath = sqlitePath
+    database = new Database(sqlitePath, { create: true })
+    applyDatabasePragmas(database)
     return database
 }
 
@@ -157,7 +154,11 @@ export function getDatabasePath(): string {
 
 export function closeDatabase(): void {
     if (database) {
-        database.close()
+        try {
+            database.close()
+        } catch {
+            // Ignore double-close or handles invalidated by test cleanup.
+        }
         database = undefined
     }
     storageDir = undefined

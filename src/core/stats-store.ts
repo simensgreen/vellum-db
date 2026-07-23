@@ -1,5 +1,4 @@
-import { statSync } from "node:fs"
-import { getConfig, getDatabase, getDatabasePath } from "../db.ts"
+import { databaseOnDiskBytes, getConfig, getDatabase, getDatabasePath } from "../db.ts"
 import { addUtcEpochDays, utcEpochDay } from "../utc-epoch-day.ts"
 import { listTables, quoteIdentExport } from "./catalog.ts"
 
@@ -44,17 +43,10 @@ export function measureLiveSnapshot(): StatsSnapshot {
         rowCount += countRow.count
     }
 
-    let databaseBytes = 0
-    try {
-        databaseBytes = statSync(getDatabasePath()).size
-    } catch {
-        databaseBytes = 0
-    }
-
     return {
         table_count: tablesPage.total_count,
         row_count: rowCount,
-        database_bytes: databaseBytes
+        database_bytes: databaseOnDiskBytes(getDatabasePath())
     }
 }
 

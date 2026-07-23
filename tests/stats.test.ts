@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test"
-import { mkdtempSync, rmSync } from "node:fs"
+import { existsSync, mkdtempSync, rmSync, statSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { GET as queryRows } from "../routes/rows.ts"
@@ -16,7 +16,14 @@ import {
     recordStatsDelta,
     refreshStatsSnapshot
 } from "../src/core/stats-store.ts"
-import { closeDatabase, getDatabase, openDatabase, parseConfig } from "../src/db.ts"
+import {
+    closeDatabase,
+    databaseOnDiskBytes,
+    getDatabase,
+    getDatabasePath,
+    openDatabase,
+    parseConfig
+} from "../src/db.ts"
 import { addUtcEpochDays, utcEpochDay, utcEpochDayToIso } from "../src/utc-epoch-day.ts"
 import { tasksDefinition } from "./fixtures/table-definitions.ts"
 
@@ -25,6 +32,11 @@ function withTempDb(config: Record<string, unknown> = {}): string {
     openDatabase(dir, parseConfig({ maxRowsPerQuery: 100, rawSqlMode: "select-only", ...config }))
     ensureMetaSchema()
     return dir
+}
+
+function cleanupTempDb(dir: string): void {
+    closeDatabase()
+    rmSync(dir, { recursive: true, force: true })
 }
 
 afterEach(() => {
@@ -44,7 +56,7 @@ describe("stats store", () => {
         try {
             expect(getDatabaseStats().summary.table_count).toBe(0)
         } finally {
-            rmSync(dir, { recursive: true, force: true })
+            cleanupTempDb(dir)
         }
     })
 
@@ -86,7 +98,7 @@ describe("stats store", () => {
             expect(row?.row_count).toBe(1)
             expect(row?.database_bytes).toBeGreaterThan(0)
         } finally {
-            rmSync(dir, { recursive: true, force: true })
+            cleanupTempDb(dir)
         }
     })
 
@@ -109,7 +121,7 @@ describe("stats store", () => {
             pruneStatsRetention()
             expect(listStatsRows(oldDay, oldDay)).toHaveLength(0)
         } finally {
-            rmSync(dir, { recursive: true, force: true })
+            cleanupTempDb(dir)
         }
     })
 })
@@ -136,7 +148,7 @@ describe("getDatabaseStats", () => {
             expect(lastBucket.inserts).toBeGreaterThanOrEqual(2)
             expect(lastBucket.reads).toBeGreaterThanOrEqual(5)
         } finally {
-            rmSync(dir, { recursive: true, force: true })
+            cleanupTempDb(dir)
         }
     })
 
@@ -152,7 +164,7 @@ describe("getDatabaseStats", () => {
             const totalUpdates = stats.buckets.reduce((sum, bucket) => sum + bucket.updates, 0)
             expect(totalUpdates).toBeGreaterThanOrEqual(3)
         } finally {
-            rmSync(dir, { recursive: true, force: true })
+            cleanupTempDb(dir)
         }
     })
 })
@@ -170,7 +182,7 @@ describe("GET /stats route", () => {
             expect(body.summary.table_count).toBe(0)
             expect(Array.isArray(body.buckets)).toBe(true)
         } finally {
-            rmSync(dir, { recursive: true, force: true })
+            cleanupTempDb(dir)
         }
     })
 })
@@ -190,7 +202,56 @@ describe("measureLiveSnapshot", () => {
             expect(snapshot.table_count).toBe(1)
             expect(snapshot.database_bytes).toBeGreaterThan(0)
         } finally {
-            rmSync(dir, { recursive: true, force: true })
+            cleanupTempDb(dir)
+        }
+    })
+
+    test("database_bytes matches the main sqlite file size", async () => {
+        const dir = withTempDb()
+        try {
+            await createTableRoute(
+                new Request("http://local/tables?scope=demo", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(tasksDefinition)
+                })
+            )
+            for (let index = 0; index < 50; index += 1) {
+                insertRow({
+                    table: "tasks",
+                    row: {
+                        title: `Task ${index}`,
+                        status: "open",
+                        points: index
+                    }
+                })
+            }
+
+            const sqlitePath = getDatabasePath()
+            const mainFileBytes = statSync(sqlitePath).size
+            const onDiskBytes = databaseOnDiskBytes(sqlitePath)
+            const snapshot = measureLiveSnapshot()
+
+            expect(onDiskBytes).toBe(mainFileBytes)
+            expect(snapshot.database_bytes).toBe(mainFileBytes)
+            expect(mainFileBytes).toBeGreaterThan(4096)
+            expect(existsSync(`${sqlitePath}-wal`)).toBe(false)
+        } finally {
+            cleanupTempDb(dir)
+        }
+    })
+})
+
+describe("sqlite journal mode", () => {
+    test("openDatabase uses rollback journal (DELETE mode)", () => {
+        const dir = withTempDb()
+        try {
+            const journalMode = getDatabase().query("PRAGMA journal_mode").get() as {
+                journal_mode: string
+            }
+            expect(journalMode.journal_mode).toBe("delete")
+        } finally {
+            cleanupTempDb(dir)
         }
     })
 })
