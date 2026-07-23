@@ -71,6 +71,32 @@ bun run dev:app
 
 Open `http://localhost:5173`. Card preview mock: `http://localhost:5173/?preview=1`.
 
+### Screenshots
+
+Overview dashboard (`GET /stats`):
+
+![Database app overview](docs/database-app-overview.png)
+
+Tables grouped by **scope**; browse and edit rows:
+
+![Table rows](docs/database-app-table-rows.png)
+
+Staged edits with batch commit (`POST /rows/commit`):
+
+![Row commit](docs/database-app-row-commit.png)
+
+Saved **views** — browse aggregates and queries:
+
+![Aggregate view](docs/database-app-view-aggregate.png)
+
+Parameterized views — fill `$param` placeholders and run:
+
+![Parameterized view](docs/database-app-view-params.png)
+
+Create tables in the UI (**scope** required):
+
+![Create table](docs/database-app-create-table.png)
+
 ## Design notes
 
 - **Vellum plugin layout** — matches plugin-builder: `package.json` (+ `vellum: {}`), `config.json`, `hooks/`, `tools/`, `skills/`, `src/`; runtime DB under host-managed `data/` (`InitContext.pluginStorageDir`).
