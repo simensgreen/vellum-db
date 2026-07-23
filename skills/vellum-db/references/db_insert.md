@@ -6,7 +6,7 @@ Insert one row. `row` must match the table's compiled row schema (column **slugs
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `table` | yes | Table name (slug) |
+| `table` | yes | Table slug |
 | `row` | yes | Object keyed by column slug |
 | `on_conflict` | no | `abort` (default) \| `ignore` \| `replace` |
 

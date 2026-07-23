@@ -6,7 +6,7 @@ Read rows with a JSON filter (not SQL). Supports order, column projection, and `
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `table` | yes | Table name (slug) |
+| `table` | yes | Table slug |
 | `filter` | no | JSON filter object (keys = column **slugs**) |
 | `order` | no | `[{ "column", "direction": "asc"\|"desc" }]` — `column` is slug |
 | `limit` | no | Capped by `maxRowsPerQuery` |
@@ -16,7 +16,7 @@ Read rows with a JSON filter (not SQL). Supports order, column projection, and `
 
 ## Output
 
-`{ table, count, limit, offset, has_more, rows }`. Each row object is keyed by column slug (including primary key column(s) and join output aliases).
+`{ table, page_count, total_count, limit, offset, has_more, rows }`. Each row object is keyed by column slug (including primary key column(s) and join output aliases).
 
 ## Joins
 

@@ -6,12 +6,12 @@ Delete rows matching a JSON filter. Filter MUST be a non-empty object (empty fil
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `table` | yes | Table name (slug) |
+| `table` | yes | Table slug |
 | `filter` | yes | Non-empty JSON filter (column slugs) |
 
 ## Output
 
-`{ table, deleted }` (or equivalent change count from the tool).
+`{ table, changes }` — SQLite delete count for matched rows.
 
 ## Examples
 

@@ -96,14 +96,22 @@ body {
 }
 
 .app-shell__main > .dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--v-spacing-lg);
     flex: 1;
     min-height: 0;
+    width: 100%;
+    max-width: 48rem;
     overflow-y: auto;
 }
 
 .app-shell__main > .table-detail {
-    flex: 1;
+    display: flex;
+    flex-direction: column;
     min-height: 0;
+    flex: 1;
+    overflow: hidden;
 }
 
 .app-shell__main > .form-panel {
@@ -282,14 +290,6 @@ body {
 
 .table-detail__toolbar {
     margin-bottom: var(--v-spacing-md);
-}
-
-.table-detail {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    flex: 1;
-    overflow: hidden;
 }
 
 .rows-grid {
@@ -653,8 +653,8 @@ body {
     padding: 0;
 }
 
-.rows-grid__table.v-data-table tbody td.rows-grid__cell,
-.rows-grid__row--draft > td.rows-grid__cell {
+.rows-grid__row--draft > td.rows-grid__cell,
+.rows-grid__table.v-data-table tbody td.rows-grid__cell {
     padding: 0;
     vertical-align: top;
     height: var(--rows-grid-row-height);
@@ -1028,12 +1028,44 @@ body {
     align-items: stretch;
 }
 
+.button-switch {
+    border: 1px solid var(--v-border-base);
+    border-radius: var(--v-radius-md);
+    background: var(--v-bg-subtle);
+    color: var(--v-content-muted);
+    padding: var(--v-spacing-xs) var(--v-spacing-md);
+    font-size: var(--v-font-size-sm);
+    cursor: pointer;
+}
+
 .column-card__switches .button-switch {
     font-size: var(--v-font-size-base);
     padding: var(--v-spacing-sm) var(--v-spacing-md);
     display: inline-flex;
     align-items: center;
     justify-content: center;
+}
+
+.column-type-fields__row .form-field .button-switch {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: var(--v-font-size-base);
+    padding: var(--v-spacing-sm) var(--v-spacing-md);
+}
+
+.button-switch:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--v-primary-base) 40%, var(--v-border-base));
+}
+
+.button-switch--on {
+    background: color-mix(in srgb, var(--v-primary-base) 12%, transparent);
+    border-color: color-mix(in srgb, var(--v-primary-base) 45%, var(--v-border-base));
+    color: var(--v-content-default);
+}
+
+.button-switch:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 .icon-remove-button {
@@ -1053,38 +1085,6 @@ body {
 .icon-remove-button:hover {
     color: var(--v-system-negative-strong);
     border-color: color-mix(in srgb, var(--v-system-negative-strong) 35%, var(--v-border-base));
-}
-
-.button-switch {
-    border: 1px solid var(--v-border-base);
-    border-radius: var(--v-radius-md);
-    background: var(--v-bg-subtle);
-    color: var(--v-content-muted);
-    padding: var(--v-spacing-xs) var(--v-spacing-md);
-    font-size: var(--v-font-size-sm);
-    cursor: pointer;
-}
-
-.button-switch:hover:not(:disabled) {
-    border-color: color-mix(in srgb, var(--v-primary-base) 40%, var(--v-border-base));
-}
-
-.button-switch--on {
-    background: color-mix(in srgb, var(--v-primary-base) 12%, transparent);
-    border-color: color-mix(in srgb, var(--v-primary-base) 45%, var(--v-border-base));
-    color: var(--v-content-default);
-}
-
-.button-switch:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-}
-
-.column-type-fields__row .form-field .button-switch {
-    width: 100%;
-    box-sizing: border-box;
-    font-size: var(--v-font-size-base);
-    padding: var(--v-spacing-sm) var(--v-spacing-md);
 }
 
 .column-type-fields {
@@ -1181,16 +1181,6 @@ body {
 .card-preview__label {
     font-size: var(--v-font-size-sm);
     font-weight: 500;
-}
-
-.dashboard {
-    display: flex;
-    flex-direction: column;
-    gap: var(--v-spacing-lg);
-    flex: 1;
-    min-height: 0;
-    width: 100%;
-    max-width: 48rem;
 }
 
 .dashboard__cards {

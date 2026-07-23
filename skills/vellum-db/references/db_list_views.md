@@ -7,14 +7,14 @@ List named views with optional filters and pagination.
 | Field | Required | Notes |
 | --- | --- | --- |
 | `kind` | no | `query` \| `aggregate` |
-| `scope` | no | Filter by scope `[a-z][a-z0-9_]*` |
+| `scope` | no | Exact scope (`[a-z][a-z0-9_]*`). `null` = only unscoped. Omit = all |
 | `slug_prefix` | no | Slugs starting with this prefix |
 | `limit` | no | Page size |
 | `offset` | no | Skip N |
 
 ## Output
 
-`{ views, count, limit, offset, has_more }`. Each entry includes `slug`, `name`, `kind`, `scope`, `description`, `definition`, `param_names`, timestamps.
+`{ views, page_count, total_count, limit, offset, has_more }`. Each entry includes `slug`, `name`, `kind`, `scope`, `description`, `definition`, `param_names`, timestamps.
 
 ## Examples
 
@@ -31,5 +31,13 @@ List named views with optional filters and pagination.
   "scope": "work",
   "limit": 10,
   "offset": 0
+}
+```
+
+**Example excerpt** — only views without a scope:
+
+```json
+{
+  "scope": null
 }
 ```

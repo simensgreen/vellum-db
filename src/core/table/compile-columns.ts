@@ -116,6 +116,7 @@ export function isSingleIntegerPrimaryKey(definition: TableDefinition): boolean 
     if (primaryKeys.length !== 1) {
         return false
     }
+    // validateTableDefinitionSemantics requires at least one primary key column.
     const pkSlug = primaryKeys[0]!
     const column = definition.columns.find((entry) => entry.slug === pkSlug)
     return column?.data.type === "int"

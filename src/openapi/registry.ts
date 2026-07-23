@@ -215,7 +215,7 @@ export function createOpenApiRegistry(): OpenAPIRegistry {
         operationId: "listViews",
         summary: "List named views",
         tags: ["views"],
-        request: { query: ListViewsQuerySchema },
+        request: { query: ListViewsQuerySchema.extend({ scope: ScopeSchema.optional() }) },
         responses: successResponses
     })
 

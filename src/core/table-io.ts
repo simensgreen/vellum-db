@@ -71,7 +71,7 @@ function normalizeLoadedRow(
     schema: JsonSchemaObject,
     rowIndex: number
 ): Record<string, unknown> {
-    const known = new Set(columns.map((column) => column.name))
+    const known = new Set(columns.map((column) => column.slug))
     const definition = parseTableDefinition(table)
     const primaryKeySlugSet = primaryKeyColumnSet(definition)
     for (const key of Object.keys(rawRow)) {
@@ -81,11 +81,11 @@ function normalizeLoadedRow(
     }
     const row: Record<string, unknown> = {}
     for (const column of columns) {
-        if (!Object.hasOwn(rawRow, column.name)) {
+        if (!Object.hasOwn(rawRow, column.slug)) {
             continue
         }
         try {
-            row[column.name] = coerceCellValue(rawRow[column.name], column, schema)
+            row[column.slug] = coerceCellValue(rawRow[column.slug], column, schema)
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error)
             throw new Error(`Row ${rowIndex}: ${message}`)
@@ -281,7 +281,7 @@ function fetchAllDecodedRows(table: TableRow): Record<string, unknown>[] {
     const rowSchema = JSON.parse(table.schema_json) as JsonSchemaObject
     const definition = parseTableDefinition(table)
     const primaryKeySlugsList = primaryKeySlugs(definition)
-    const selectList = columns.map((column) => quoteIdentExport(column.name)).join(", ")
+    const selectList = columns.map((column) => quoteIdentExport(column.slug)).join(", ")
     const orderBy = primaryKeySlugsList.map((slug) => quoteIdentExport(slug)).join(", ")
     const rawRows = getDatabase()
         .query(`SELECT ${selectList} FROM ${quoteIdentExport(table.name)} ORDER BY ${orderBy}`)
@@ -353,7 +353,7 @@ export function dumpTableToBuffer(input: { table: string; mode: IoMode }): {
     const table = requireTable(input.table)
     const rows = fetchAllDecodedRows(table)
     const columns = getTableColumns(table)
-    const headers = columns.map((column) => column.name)
+    const headers = columns.map((column) => column.slug)
     const body = serializeRowsToBuffer(input.mode, rows, headers, table.name)
     return {
         table: table.name,

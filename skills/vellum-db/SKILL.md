@@ -48,8 +48,8 @@ The vellum-db plugin stores agent data in **TableDefinition** tables (column slu
 
 ## Workflow
 
-1. **Discover** — call `db_list_tables` (optional `scope`, `name_prefix`, `limit`, `offset`). Read `name`, `scope`, `definition`, and `columns` (slugs) before querying. Details: [references/db_list_tables.md](references/db_list_tables.md).
-2. **Choose read tool** — `db_query` for row-level reads; `db_aggregate` for metrics and `group_by`. Both support `limit`/`offset` and return `has_more`. Details: [references/db_query.md](references/db_query.md), [references/db_aggregate.md](references/db_aggregate.md).
+1. **Discover** — call `db_list_tables` (optional `scope`, `slug_prefix`, `limit`, `offset`). Read `slug`, `scope`, `definition`, and `columns` (slugs) before querying. Details: [references/db_list_tables.md](references/db_list_tables.md).
+2. **Choose read tool** — `db_query` for row-level reads; `db_aggregate` for metrics and `group_by`. Both support `limit`/`offset` and return `page_count`, `total_count`, and `has_more`. Details: [references/db_query.md](references/db_query.md), [references/db_aggregate.md](references/db_aggregate.md).
 3. **Prepare data if needed** — `db_insert` to add rows; `db_update` / `db_delete` with a **non-empty** JSON `filter`. Details: [references/db_insert.md](references/db_insert.md), [references/db_update.md](references/db_update.md), [references/db_delete.md](references/db_delete.md).
 4. **Repeat analysis** — run saved views with `db_run_view` and `params`. Views are defined in domain `migrate.up.json` files (see **`vellum-db-meta`**). Details: [references/db_run_view.md](references/db_run_view.md).
 5. **List views** — [references/db_list_views.md](references/db_list_views.md).
@@ -110,7 +110,7 @@ Never pass multiple statements (no semicolons). Details and examples: [reference
 }
 ```
 
-Call `db_query` with the JSON above. Expect `{ "table", "count", "limit", "offset", "has_more", "rows" }` where each row is keyed by column slug (including primary key column(s)). More shapes: [references/db_query.md](references/db_query.md).
+Call `db_query` with the JSON above. Expect `{ "table", "page_count", "total_count", "limit", "offset", "has_more", "rows" }` where each row is keyed by column slug (including primary key column(s)). More shapes: [references/db_query.md](references/db_query.md).
 
 ### Example 2
 
@@ -130,7 +130,7 @@ Call `db_query` with the JSON above. Expect `{ "table", "count", "limit", "offse
 ## Common pitfalls
 
 - Querying before `db_list_tables` — column slugs come from `definition` / `columns`, not guesses. Prefer `scope` when many tables exist.
-- Ignoring `has_more` — bump `offset` by `limit` and re-query until `has_more` is false.
+- Ignoring `has_more` — bump `offset` by `limit` and re-query until `has_more` is false (`total_count` shows the full match size).
 - Using SQL strings in `db_query` / `db_aggregate` — pass JSON filters only.
 - Empty `filter` on `db_update` or `db_delete` — rejected to prevent wiping a whole table.
 - Forgetting `params` on `db_run_view` — `"$name"` placeholders stay literal and fail.
@@ -140,7 +140,7 @@ Call `db_query` with the JSON above. Expect `{ "table", "count", "limit", "offse
 
 ## Verification checklist
 
-- [ ] Called `db_list_tables` when schema or table names were unknown.
+- [ ] Called `db_list_tables` when schema or table slugs were unknown.
 - [ ] Used `db_query` or `db_aggregate` (not `db_sql`) for routine reads.
 - [ ] Repeated analysis uses `db_run_view` on views from domain migrations.
 - [ ] Every `$placeholder` in a view definition has a matching `params` key at run time.

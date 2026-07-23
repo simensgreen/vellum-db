@@ -33,7 +33,7 @@ export function DatabaseSidebar({
     tablesError: string | null
     viewsError: string | null
     onSelectOverview: () => void
-    onSelectTable: (tableName: string) => void
+    onSelectTable: (tableSlug: string) => void
     onSelectView: (viewSlug: string) => void
     onNewTable: () => void
 }) {
@@ -95,7 +95,7 @@ export function DatabaseSidebar({
                         <ScopeAccordionList
                             items={tables}
                             selectedKey={selectedTable}
-                            getKey={(table) => table.name}
+                            getKey={(table) => table.slug}
                             getLabel={(table) => table.definition.name}
                             onSelect={onSelectTable}
                             emptyMessage="No tables yet."

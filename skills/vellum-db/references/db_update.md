@@ -6,13 +6,13 @@ Patch rows matching a JSON filter. Filter MUST be a non-empty object (empty filt
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `table` | yes | Table name (slug) |
+| `table` | yes | Table slug |
 | `filter` | yes | Non-empty JSON filter (column slugs) |
 | `patch` | yes | Partial fields to set (`minProperties: 1`) |
 
 ## Output
 
-`{ table, matched, updated }` (or equivalent change counts from the tool).
+`{ table, matched, changes }` — `matched` = rows selected by filter; `changes` = SQLite update count.
 
 ## Examples
 

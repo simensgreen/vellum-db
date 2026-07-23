@@ -123,7 +123,7 @@ export function RowsGrid({
     const [ioBusy, setIoBusy] = useState(false)
 
     const displayColumns = useMemo(() => visibleColumns(table), [table])
-    const tableName = table.name
+    const tableSlug = table.slug
     const tableTitle = table.definition.name
 
     useLayoutEffect(() => {
@@ -163,7 +163,7 @@ export function RowsGrid({
     async function handleExport(format: IoFormat): Promise<void> {
         setIoBusy(true)
         try {
-            const exported = await exportTableFile(tableName, format)
+            const exported = await exportTableFile(tableSlug, format)
             const url = URL.createObjectURL(exported.blob)
             const anchor = document.createElement("a")
             anchor.href = url
@@ -190,7 +190,7 @@ export function RowsGrid({
         }
         setIoBusy(true)
         try {
-            await importTableFile(tableName, file)
+            await importTableFile(tableSlug, file)
             onApplySuccess?.()
         } catch (error) {
             showToastError(error instanceof Error ? error.message : "Failed to import table")
@@ -209,7 +209,7 @@ export function RowsGrid({
 
         staging.beginApply()
         try {
-            await commitRows(tableName, body)
+            await commitRows(tableSlug, body)
             staging.succeedApply()
             onApplySuccess?.()
         } catch (error) {

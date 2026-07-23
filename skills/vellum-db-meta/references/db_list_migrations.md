@@ -21,7 +21,8 @@ Paginated list of applied schema migrations from `_migrations`.
       "applied_at": "2026-07-23T12:00:00.000Z"
     }
   ],
-  "count": 2,
+  "page_count": 2,
+  "total_count": 2,
   "limit": 50,
   "offset": 0,
   "has_more": false

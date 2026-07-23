@@ -31,9 +31,9 @@ export function updateRows(input: {
     const patch = input.patch
     const columns = getTableColumns(table)
     const rowSchema = JSON.parse(table.schema_json) as JsonSchemaObject
-    const columnByName = new Map(columns.map((column) => [column.name, column]))
+    const columnBySlug = new Map(columns.map((column) => [column.slug, column]))
     for (const key of Object.keys(patch)) {
-        if (!columnByName.has(key)) {
+        if (!columnBySlug.has(key)) {
             throw new Error(`Unknown column "${key}" in patch`)
         }
     }
@@ -52,9 +52,13 @@ export function updateRows(input: {
 
         const setColumns = Object.keys(patch)
         const setSql = setColumns.map((name) => `${quoteIdentExport(name)} = ?`).join(", ")
-        const setValues = setColumns.map((name) =>
-            encodeCellValue(patch[name], columnByName.get(name)!)
-        )
+        const setValues = setColumns.map((name) => {
+            const column = columnBySlug.get(name)
+            if (!column) {
+                throw new Error(`Unknown column "${name}" in patch`)
+            }
+            return encodeCellValue(patch[name], column)
+        })
         const definition = parseTableDefinition(table)
         const primaryKeySlugsList = primaryKeySlugs(definition)
         const whereClause = primaryKeySlugsList

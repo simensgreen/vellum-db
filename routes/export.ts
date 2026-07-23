@@ -15,7 +15,7 @@ export async function GET(request: Request): Promise<Response> {
             table: query.table,
             mode: query.mode
         })
-        return new Response(exported.body, {
+        return new Response(exported.body.slice(), {
             status: 200,
             headers: {
                 "Content-Type": exported.contentType,

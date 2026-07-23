@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "vellum-db REST API",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "description": "HTTP API for the vellum-db Vellum plugin. Same capabilities as db_* tools. Reads use query parameters (JSON fields URL-encoded). Mutations put table/name scalars in query and payload in JSON body."
   },
   "servers": [
@@ -63,7 +63,11 @@
       "PaginatedMeta": {
         "type": "object",
         "properties": {
-          "count": {
+          "page_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_count": {
             "type": "integer",
             "minimum": 0
           },
@@ -80,7 +84,8 @@
           }
         },
         "required": [
-          "count",
+          "page_count",
+          "total_count",
           "limit",
           "offset",
           "has_more"
@@ -89,7 +94,7 @@
       "TableSummary": {
         "type": "object",
         "properties": {
-          "name": {
+          "slug": {
             "type": "string"
           },
           "scope": {
@@ -107,7 +112,7 @@
             "items": {
               "type": "object",
               "properties": {
-                "name": {
+                "slug": {
                   "type": "string"
                 },
                 "sqlType": {
@@ -126,7 +131,7 @@
                 }
               },
               "required": [
-                "name",
+                "slug",
                 "sqlType",
                 "notNull",
                 "jsonStored"
@@ -141,7 +146,7 @@
           }
         },
         "required": [
-          "name",
+          "slug",
           "scope",
           "definition",
           "columns",
@@ -152,7 +157,7 @@
       "QueryResult": {
         "type": "object",
         "properties": {
-          "count": {
+          "page_count": {
             "type": "integer",
             "minimum": 0
           },
@@ -180,7 +185,7 @@
           }
         },
         "required": [
-          "count",
+          "page_count",
           "total_count",
           "limit",
           "offset",
@@ -252,7 +257,7 @@
               "type": "string"
             },
             "required": false,
-            "name": "name_prefix",
+            "name": "slug_prefix",
             "in": "query"
           },
           {
@@ -273,7 +278,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "count": {
+                    "page_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "total_count": {
                       "type": "integer",
                       "minimum": 0
                     },
@@ -293,7 +302,7 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "name": {
+                          "slug": {
                             "type": "string"
                           },
                           "scope": {
@@ -311,7 +320,7 @@
                             "items": {
                               "type": "object",
                               "properties": {
-                                "name": {
+                                "slug": {
                                   "type": "string"
                                 },
                                 "sqlType": {
@@ -330,7 +339,7 @@
                                 }
                               },
                               "required": [
-                                "name",
+                                "slug",
                                 "sqlType",
                                 "notNull",
                                 "jsonStored"
@@ -345,7 +354,7 @@
                           }
                         },
                         "required": [
-                          "name",
+                          "slug",
                           "scope",
                           "definition",
                           "columns",
@@ -356,7 +365,8 @@
                     }
                   },
                   "required": [
-                    "count",
+                    "page_count",
+                    "total_count",
                     "limit",
                     "offset",
                     "has_more",
@@ -991,7 +1001,7 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "count": {
+                    "page_count": {
                       "type": "integer",
                       "minimum": 0
                     },
@@ -1019,7 +1029,7 @@
                     }
                   },
                   "required": [
-                    "count",
+                    "page_count",
                     "total_count",
                     "limit",
                     "offset",
@@ -1982,19 +1992,19 @@
           },
           {
             "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "slug_prefix",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "string",
               "pattern": "^[a-z][a-z0-9_]*$"
             },
             "required": false,
             "name": "scope",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "name": "slug_prefix",
             "in": "query"
           }
         ],
@@ -3588,7 +3598,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "count": {
+                    "page_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "total_count": {
                       "type": "integer",
                       "minimum": 0
                     },
@@ -3632,7 +3646,8 @@
                     }
                   },
                   "required": [
-                    "count",
+                    "page_count",
+                    "total_count",
                     "limit",
                     "offset",
                     "has_more",

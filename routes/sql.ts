@@ -9,7 +9,10 @@ export const description = "Run raw SQL (gated by config.rawSqlMode)"
 export async function POST(request: Request): Promise<Response> {
     if (getConfig().rawSqlMode === "off") {
         return Response.json(
-            { error: "db_sql is disabled (config.rawSqlMode = off)" },
+            {
+                type: "forbidden",
+                msg: "db_sql is disabled (config.rawSqlMode = off)"
+            },
             { status: 403 }
         )
     }

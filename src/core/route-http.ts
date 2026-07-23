@@ -124,14 +124,9 @@ export async function handleRoute<T>(handler: () => T | Promise<T>): Promise<Res
             const body = zodErrorToApiError(error)
             return routeErrorBody(body, 400)
         }
-        const message = error instanceof Error ? error.message : "Internal server error"
-        const status = message.includes("disabled") ? 403 : 400
-        return routeErrorBody(
-            {
-                type: status === 403 ? "forbidden" : "bad_request",
-                msg: message
-            },
-            status
-        )
+        if (error instanceof Error && error.message.includes("disabled")) {
+            return routeErrorBody({ type: "forbidden", msg: error.message }, 403)
+        }
+        return routeErrorBody({ type: "internal_error", msg: "Internal server error" }, 500)
     }
 }

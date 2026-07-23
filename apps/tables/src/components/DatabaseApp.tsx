@@ -73,7 +73,7 @@ export function DatabaseApp() {
     const [viewRunError, setViewRunError] = useState<string | null>(null)
     const [viewRunLoading, setViewRunLoading] = useState(false)
 
-    const selectedTableSummary = tables.find((table) => table.name === selectedTable) ?? null
+    const selectedTableSummary = tables.find((table) => table.slug === selectedTable) ?? null
     const selectedViewSummary = views.find((view) => view.slug === selectedView) ?? null
     const selectedViewParamNames = selectedViewSummary?.param_names ?? []
 
@@ -87,7 +87,7 @@ export function DatabaseApp() {
                 if (!current) {
                     return null
                 }
-                if (response.tables.some((table) => table.name === current)) {
+                if (response.tables.some((table) => table.slug === current)) {
                     return current
                 }
                 return null
@@ -305,7 +305,7 @@ export function DatabaseApp() {
                 onOffsetChange={setRowOffset}
                 onLimitChange={handleLimitChange}
                 onApplySuccess={() => {
-                    void loadRows(selectedTable!, rowOffset, rowLimit)
+                    void loadRows(selectedTableSummary.slug, rowOffset, rowLimit)
                 }}
             />
         )

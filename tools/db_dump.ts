@@ -5,7 +5,7 @@ import { runTool } from "../src/tool-result.ts"
 const inputSchema = {
     type: "object",
     properties: {
-        table: { type: "string", description: "Source table name" },
+        table: { type: "string", description: "Source table slug" },
         path: {
             type: "string",
             description:

@@ -13,7 +13,14 @@ export async function POST(request: Request): Promise<Response> {
         if (body.byteLength === 0) {
             throw new Error("Request body must contain file data")
         }
-        const mode = query.mode ?? ioModeFromFilename(query.filename!)
+        const filename = query.filename
+        let mode = query.mode
+        if (!mode) {
+            if (!filename) {
+                throw new Error("Provide query parameter mode or filename")
+            }
+            mode = ioModeFromFilename(filename)
+        }
         return loadTableFromBuffer({
             table: query.table,
             mode,

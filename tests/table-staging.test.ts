@@ -10,7 +10,7 @@ import { patchToCommitBody } from "../apps/tables/src/staging/to-commit.ts"
 import { emptyPatch } from "../apps/tables/src/staging/types.ts"
 
 const eventsTableSummary: TableSummary = {
-    name: "events",
+    slug: "events",
     scope: null,
     definition: {
         slug: "events",

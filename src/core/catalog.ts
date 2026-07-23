@@ -1,5 +1,6 @@
 import type { Database, SQLQueryBindings } from "bun:sqlite"
 import { ApiError } from "../api/errors.ts"
+import type { Scope } from "../api/schemas/common.ts"
 import { asBindings } from "../bindings.ts"
 import { getConfig, getDatabase } from "../db.ts"
 import { assertSafeIdentifier } from "../identifiers.ts"
@@ -25,7 +26,7 @@ export type TableRow = {
 }
 
 export type ColumnSpec = {
-    name: string
+    slug: string
     sqlType: "TEXT" | "INTEGER" | "REAL"
     notNull: boolean
     jsonStored: boolean
@@ -36,7 +37,7 @@ const TABLE_ROW_SELECT =
 
 function compiledToColumnSpec(column: CompiledColumn): ColumnSpec {
     return {
-        name: column.slug,
+        slug: column.slug,
         sqlType: column.sqlType,
         notNull: column.notNull,
         jsonStored: column.jsonStored
@@ -126,37 +127,17 @@ export function normalizeScope(scope: unknown): string | null {
     }
 }
 
-export function requireScope(scope: unknown, context: { entity: string; hint?: string }): string {
-    const normalized = normalizeScope(scope)
-    if (normalized === null) {
-        throw new ApiError(
-            "validation_error",
-            `scope is required when creating a ${context.entity}`,
-            {
-                hint:
-                    context.hint ??
-                    "Pass scope matching [a-z][a-z0-9_]* (query param or migration entry field)"
-            }
-        )
-    }
-    return normalized
-}
-
 export type ListTablesFilter = {
     scope?: string | null
-    name_prefix?: string
+    slug_prefix?: string
     limit?: number
     offset?: number
 }
 
-export function listTables(filter: ListTablesFilter = {}): {
-    tables: TableRow[]
-    count: number
-    limit: number
-    offset: number
-    has_more: boolean
+function buildListTablesWhere(filter: ListTablesFilter): {
+    where: string
+    values: unknown[]
 } {
-    const { limit, offset } = resolvePage(filter.limit, filter.offset)
     const clauses: string[] = []
     const values: unknown[] = []
 
@@ -169,25 +150,47 @@ export function listTables(filter: ListTablesFilter = {}): {
             values.push(scope)
         }
     }
-    if (filter.name_prefix !== undefined && filter.name_prefix !== "") {
-        if (typeof filter.name_prefix !== "string") {
-            throw new ApiError("validation_error", "name_prefix must be a string")
+    if (filter.slug_prefix !== undefined && filter.slug_prefix !== "") {
+        if (typeof filter.slug_prefix !== "string") {
+            throw new ApiError("validation_error", "slug_prefix must be a string")
         }
         clauses.push("name LIKE ?")
-        values.push(`${filter.name_prefix.replaceAll("%", "").replaceAll("_", "\\_")}%`)
+        values.push(`${filter.slug_prefix.replaceAll("%", "").replaceAll("_", "\\_")}%`)
     }
 
     const where = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : ""
-    const rows = getDatabase()
+    return { where, values }
+}
+
+export function listTables(filter: ListTablesFilter = {}): {
+    tables: TableRow[]
+    page_count: number
+    total_count: number
+    limit: number
+    offset: number
+    has_more: boolean
+} {
+    const { limit, offset } = resolvePage(filter.limit, filter.offset)
+    const { where, values } = buildListTablesWhere(filter)
+    const database = getDatabase()
+
+    const totalRow = database
+        .query<{ total: number }, SQLQueryBindings[]>(
+            `SELECT COUNT(*) AS total FROM _tables ${where}`
+        )
+        .get(...asBindings(values)) as { total: number }
+
+    const rows = database
         .query<TableRow, SQLQueryBindings[]>(
             `${TABLE_ROW_SELECT} ${where} ORDER BY name LIMIT ? OFFSET ?`
         )
         .all(...asBindings([...values, limit + 1, offset]))
 
-    const page = pageFromRows(rows, limit, offset)
+    const page = pageFromRows(rows, limit, offset, totalRow.total)
     return {
         tables: page.items,
-        count: page.count,
+        page_count: page.page_count,
+        total_count: page.total_count,
         limit: page.limit,
         offset: page.offset,
         has_more: page.has_more
@@ -220,7 +223,7 @@ function quoteIdent(identifier: string): string {
 
 export function createUserTable(
     definitionInput: TableDefinition,
-    options: { scope?: string | null } = {}
+    options: { scope: Scope }
 ): TableRow {
     const knownTables = buildKnownTablesMap()
     const definition = assertTableDefinition(definitionInput, { knownTables })
@@ -232,8 +235,7 @@ export function createUserTable(
         })
     }
 
-    const scopeSource = Object.hasOwn(options, "scope") ? options.scope : definition.scope
-    const scope = requireScope(scopeSource, { entity: "table" })
+    const scope = normalizeScope(options.scope)
 
     const definitionJson = JSON.stringify(definition)
     const schemaJson = JSON.stringify(compileRowJsonSchema(definition, { knownTables }))
@@ -260,7 +262,7 @@ export function createUserTable(
     }
 }
 
-export function dropUserTable(name: string): { name: string } {
+export function dropUserTable(name: string): { slug: string } {
     if (!getConfig().allowDropTable) {
         throw new ApiError("forbidden", "Table drop is disabled (config.allowDropTable = false)", {
             status: 403
@@ -280,7 +282,7 @@ export function dropUserTable(name: string): { name: string } {
             database.run("COMMIT")
         }
         refreshStatsSnapshot()
-        return { name: table.name }
+        return { slug: table.name }
     } catch (error) {
         if (startedTransaction) {
             database.run("ROLLBACK")
@@ -418,7 +420,7 @@ export function alterUserTable(input: {
 export function encodeCellValue(value: unknown, column: ColumnSpec): string | number | null {
     if (value === null || value === undefined) {
         if (column.notNull) {
-            throw new ApiError("validation_error", `Column "${column.name}" is required`)
+            throw new ApiError("validation_error", `Column "${column.slug}" is required`)
         }
         return null
     }
@@ -458,7 +460,7 @@ export function coerceCellValue(
         return null
     }
 
-    const typeName = propertyTypeName(schema, column.name)
+    const typeName = propertyTypeName(schema, column.slug)
 
     if (column.jsonStored) {
         if (typeof raw === "string") {
@@ -466,7 +468,7 @@ export function coerceCellValue(
                 return JSON.parse(raw)
             } catch {
                 throw new Error(
-                    `Column "${column.name}" expects JSON object/array; got invalid JSON`
+                    `Column "${column.slug}" expects JSON object/array; got invalid JSON`
                 )
             }
         }
@@ -487,7 +489,7 @@ export function coerceCellValue(
         if (text === "false" || text === "0" || text === "no") {
             return false
         }
-        throw new Error(`Column "${column.name}" expects a boolean`)
+        throw new Error(`Column "${column.slug}" expects a boolean`)
     }
 
     if (column.sqlType === "INTEGER") {
@@ -496,7 +498,7 @@ export function coerceCellValue(
         }
         const text = String(raw).trim()
         if (!/^-?\d+$/.test(text)) {
-            throw new Error(`Column "${column.name}" expects an integer`)
+            throw new Error(`Column "${column.slug}" expects an integer`)
         }
         return Number(text)
     }
@@ -507,7 +509,7 @@ export function coerceCellValue(
         }
         const parsed = Number(String(raw).trim())
         if (!Number.isFinite(parsed)) {
-            throw new Error(`Column "${column.name}" expects a number`)
+            throw new Error(`Column "${column.slug}" expects a number`)
         }
         return parsed
     }
@@ -522,28 +524,28 @@ export function decodeRow(
 ): Record<string, unknown> {
     const result: Record<string, unknown> = {}
     for (const column of columns) {
-        const raw = row[column.name]
+        const raw = row[column.slug]
         if (raw === null || raw === undefined) {
-            result[column.name] = null
+            result[column.slug] = null
             continue
         }
         if (schema) {
             try {
-                result[column.name] = coerceCellValue(raw, column, schema)
+                result[column.slug] = coerceCellValue(raw, column, schema)
             } catch {
-                result[column.name] = raw
+                result[column.slug] = raw
             }
             continue
         }
         if (column.jsonStored && typeof raw === "string") {
             try {
-                result[column.name] = JSON.parse(raw)
+                result[column.slug] = JSON.parse(raw)
             } catch {
-                result[column.name] = raw
+                result[column.slug] = raw
             }
             continue
         }
-        result[column.name] = raw
+        result[column.slug] = raw
     }
     return result
 }

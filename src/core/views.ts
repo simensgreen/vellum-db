@@ -4,7 +4,7 @@ import { getDatabase } from "../db.ts"
 import { assertSafeIdentifier } from "../identifiers.ts"
 import { pageFromRows, resolvePage } from "../pagination.ts"
 import { validateAgainstSchema } from "../schema-validate.ts"
-import { normalizeScope, requireScope } from "./catalog.ts"
+import { normalizeScope } from "./catalog.ts"
 import type { AggregateDefinition, QueryDefinition } from "./query-compile.ts"
 
 export type ViewKind = "query" | "aggregate"
@@ -208,9 +208,7 @@ export function saveView(input: {
         }
     }
 
-    const scope = requireScope(scopeProvided ? input.scope : undefined, {
-        entity: "view"
-    })
+    const scope = normalizeScope(input.scope)
 
     database
         .query(
@@ -246,14 +244,10 @@ export type ListViewsFilter = {
     offset?: number
 }
 
-export function listViews(filter: ListViewsFilter = {}): {
-    views: ViewRow[]
-    count: number
-    limit: number
-    offset: number
-    has_more: boolean
+function buildListViewsWhere(filter: ListViewsFilter): {
+    where: string
+    values: unknown[]
 } {
-    const { limit, offset } = resolvePage(filter.limit, filter.offset)
     const clauses: string[] = []
     const values: unknown[] = []
 
@@ -282,16 +276,38 @@ export function listViews(filter: ListViewsFilter = {}): {
     }
 
     const where = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : ""
-    const rows = getDatabase()
+    return { where, values }
+}
+
+export function listViews(filter: ListViewsFilter = {}): {
+    views: ViewRow[]
+    page_count: number
+    total_count: number
+    limit: number
+    offset: number
+    has_more: boolean
+} {
+    const { limit, offset } = resolvePage(filter.limit, filter.offset)
+    const { where, values } = buildListViewsWhere(filter)
+    const database = getDatabase()
+
+    const totalRow = database
+        .query<{ total: number }, SQLQueryBindings[]>(
+            `SELECT COUNT(*) AS total FROM _views ${where}`
+        )
+        .get(...asBindings(values)) as { total: number }
+
+    const rows = database
         .query<ViewRow, SQLQueryBindings[]>(
             `${VIEW_ROW_SELECT} ${where} ORDER BY slug LIMIT ? OFFSET ?`
         )
         .all(...asBindings([...values, limit + 1, offset]))
 
-    const page = pageFromRows(rows, limit, offset)
+    const page = pageFromRows(rows, limit, offset, totalRow.total)
     return {
         views: page.items,
-        count: page.count,
+        page_count: page.page_count,
+        total_count: page.total_count,
         limit: page.limit,
         offset: page.offset,
         has_more: page.has_more

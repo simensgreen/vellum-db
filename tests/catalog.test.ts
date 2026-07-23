@@ -57,7 +57,7 @@ describe("vellum-db core", () => {
 
             const table = listTables().tables[0]!
             const columns = getTableColumns(table)
-            expect(columns.map((column) => column.name)).toEqual([
+            expect(columns.map((column) => column.slug)).toEqual([
                 "task_id",
                 "title",
                 "status",
@@ -84,7 +84,7 @@ describe("vellum-db core", () => {
                 filter: { status: "open" },
                 order: [{ column: "points", direction: "desc" }]
             })
-            expect(queried.count).toBe(2)
+            expect(queried.page_count).toBe(2)
             expect(queried.total_count).toBe(2)
             expect(queried.rows[0]?.title).toBe("Ship plugin")
 
@@ -93,7 +93,7 @@ describe("vellum-db core", () => {
                 limit: 1,
                 offset: 0
             })
-            expect(paged.count).toBe(1)
+            expect(paged.page_count).toBe(1)
             expect(paged.total_count).toBe(3)
             expect(paged.has_more).toBe(true)
 
@@ -102,7 +102,8 @@ describe("vellum-db core", () => {
                 metrics: [{ fn: "sum", column: "points", as: "total" }],
                 group_by: ["status"]
             })
-            expect(aggregated.count).toBe(2)
+            expect(aggregated.page_count).toBe(2)
+            expect(aggregated.total_count).toBe(2)
 
             saveView({
                 slug: "open_tasks",
@@ -143,7 +144,7 @@ describe("vellum-db core", () => {
                     }
                 ]
             })
-            expect(getTableColumns(listTables().tables[0]!).map((column) => column.name)).toContain(
+            expect(getTableColumns(listTables().tables[0]!).map((column) => column.slug)).toContain(
                 "owner"
             )
 
@@ -151,6 +152,12 @@ describe("vellum-db core", () => {
                 sql: "SELECT 1",
                 isSelect: true
             })
+            expect(guardRawSql("SELECT title FROM tasks WHERE note = 'DELETE FROM users'")).toEqual(
+                {
+                    sql: "SELECT title FROM tasks WHERE note = 'DELETE FROM users'",
+                    isSelect: true
+                }
+            )
             expect(() => guardRawSql("DELETE FROM tasks")).toThrow()
             expect(() => compileSelectQuery({ table: "missing" })).toThrow()
         } finally {
@@ -224,19 +231,10 @@ describe("vellum-db core", () => {
                     allowDropTable: true
                 })
             )
-            expect(dropUserTable("scratch")).toEqual({ name: "scratch" })
+            expect(dropUserTable("scratch")).toEqual({ slug: "scratch" })
             expect(listTables().tables).toHaveLength(0)
         } finally {
             closeDatabase()
-            rmSync(dir, { recursive: true, force: true })
-        }
-    })
-
-    test("createUserTable rejects missing scope", () => {
-        const dir = withTempDb()
-        try {
-            expect(() => createUserTable(tasksDefinition)).toThrow(/scope is required/)
-        } finally {
             rmSync(dir, { recursive: true, force: true })
         }
     })
@@ -255,7 +253,7 @@ describe("vellum-db core", () => {
             expect(listTables({ scope: null }).tables.map((table) => table.name)).toEqual([
                 "orphan"
             ])
-            expect(listTables({ name_prefix: "alpha" }).tables.map((table) => table.name)).toEqual([
+            expect(listTables({ slug_prefix: "alpha" }).tables.map((table) => table.name)).toEqual([
                 "alpha_tasks"
             ])
 
@@ -279,7 +277,7 @@ describe("vellum-db core", () => {
                 offset: 0,
                 order: [{ column: "task_id", direction: "asc" }]
             })
-            expect(queried.count).toBe(2)
+            expect(queried.page_count).toBe(2)
             expect(queried.has_more).toBe(true)
             expect(queried.limit).toBe(2)
             expect(queried.offset).toBe(0)

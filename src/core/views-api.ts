@@ -1,3 +1,5 @@
+import { ApiError } from "../api/errors.ts"
+import type { Scope } from "../api/schemas/common.ts"
 import { executeAggregateDefinition } from "./aggregate.ts"
 import { executeQueryDefinition } from "./query.ts"
 import type { AggregateDefinition, QueryDefinition } from "./query-compile.ts"
@@ -38,7 +40,8 @@ export function listViewsView(input: {
                 updated_at: row.updated_at
             }
         }),
-        count: page.count,
+        page_count: page.page_count,
+        total_count: page.total_count,
         limit: page.limit,
         offset: page.offset,
         has_more: page.has_more
@@ -51,7 +54,7 @@ export function saveViewApi(input: {
     kind: ViewKind
     definition: unknown
     description?: string
-    scope?: string | null
+    scope: Scope
 }) {
     const saved = saveView(input)
     notifyInvalidation(invalidationTagsForViewsChange())
@@ -77,7 +80,10 @@ export function deleteViewBySlug(slug: string) {
 export function runView(input: { slug: string; params?: Record<string, unknown> }) {
     const saved = getView(input.slug)
     if (!saved) {
-        throw new Error(`View "${input.slug}" does not exist`)
+        throw new ApiError("not_found", `View "${input.slug}" does not exist`, {
+            hint: "Check the view slug or list views first",
+            status: 404
+        })
     }
     const params = input.params ?? {}
     const definition = substituteParams(JSON.parse(saved.definition_json), params)

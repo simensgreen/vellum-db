@@ -176,7 +176,7 @@ Filters must be non-empty objects.
 {
   "table": "expenses",
   "filter": { "expense_id": "<expense_id>" },
-  "set": { "amount": 16.50 }
+  "patch": { "amount": 16.50 }
 }
 ```
 

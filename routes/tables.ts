@@ -16,7 +16,7 @@ export async function GET(request: Request): Promise<Response> {
         })
         return listTablesView({
             scope: query.scope,
-            name_prefix: query.name_prefix,
+            slug_prefix: query.slug_prefix,
             limit: query.limit,
             offset: query.offset
         })

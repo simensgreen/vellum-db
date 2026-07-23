@@ -33,7 +33,7 @@ const refJoinItemSchema = {
 const inputSchema = {
     type: "object",
     properties: {
-        table: { type: "string" },
+        table: { type: "string", description: "Source table slug" },
         filter: {
             type: "object",
             description: "JSON filter (eq as plain value; gt/gte/lt/lte/ne/in/like/and/or/...)"

@@ -13,7 +13,7 @@ Missing params leave the literal `"$name"` string and usually fail validation.
 
 ## Output
 
-`{ slug, name, kind, result }` where `result` matches `db_query` or `db_aggregate` output (including pagination fields when applicable).
+`{ slug, name, kind, result }` where `result` matches `db_query` or `db_aggregate` output (`page_count`, `total_count`, `limit`, `offset`, `has_more`, `rows` when paginated).
 
 ## Examples
 

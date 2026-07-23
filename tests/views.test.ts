@@ -10,6 +10,7 @@ import { extractViewParamNames, listViews, saveView } from "../src/core/views.ts
 import { runView } from "../src/core/views-api.ts"
 import { closeDatabase, openDatabase, parseConfig } from "../src/db.ts"
 import { tasksDefinition } from "./fixtures/table-definitions.ts"
+import { tableBySlug } from "./fixtures/table-lookup.ts"
 import { TEST_TABLE_SCOPE } from "./fixtures/test-scope.ts"
 
 const projectsDefinition: TableDefinition = {
@@ -107,7 +108,8 @@ describe("views", () => {
                 params: { status: "done" }
             })
             expect(runResult.kind).toBe("query")
-            expect(runResult.result.count).toBe(1)
+            expect(runResult.result.page_count).toBe(1)
+            expect(runResult.result.total_count).toBe(1)
             const firstRow = runResult.result.rows[0] as Record<string, unknown> | undefined
             expect(firstRow?.status).toBe("done")
         } finally {
@@ -120,11 +122,10 @@ describe("views", () => {
         try {
             createUserTable(projectsDefinition, { scope: TEST_TABLE_SCOPE })
             createUserTable(tasksWithProjectDefinition, { scope: TEST_TABLE_SCOPE })
-            const tasksTable = listTables().tables.find((table) => table.name === "tasks")!
-            const projectRow = insertTableRow(
-                listTables().tables.find((table) => table.name === "projects")!,
-                { name: "Website" }
-            )
+            const tasksTable = tableBySlug(listTables().tables, "tasks")
+            const projectRow = insertTableRow(tableBySlug(listTables().tables, "projects"), {
+                name: "Website"
+            })
             insertTableRow(tasksTable, {
                 title: "Ship feature",
                 status: "open",
@@ -138,7 +139,8 @@ describe("views", () => {
                 columns: ["task_id", "title", "project_name"]
             })
 
-            expect(result.count).toBe(1)
+            expect(result.page_count).toBe(1)
+            expect(result.total_count).toBe(1)
             expect(result.rows[0]?.project_name).toBe("Website")
             expect(result.rows[0]?.title).toBe("Ship feature")
         } finally {
@@ -151,11 +153,10 @@ describe("views", () => {
         try {
             createUserTable(projectsDefinition, { scope: TEST_TABLE_SCOPE })
             createUserTable(tasksWithProjectDefinition, { scope: TEST_TABLE_SCOPE })
-            const tasksTable = listTables().tables.find((table) => table.name === "tasks")!
-            const projectRow = insertTableRow(
-                listTables().tables.find((table) => table.name === "projects")!,
-                { name: "Mobile app" }
-            )
+            const tasksTable = tableBySlug(listTables().tables, "tasks")
+            const projectRow = insertTableRow(tableBySlug(listTables().tables, "projects"), {
+                name: "Mobile app"
+            })
             insertTableRow(tasksTable, {
                 title: "Fix crash",
                 status: "done",
@@ -177,7 +178,8 @@ describe("views", () => {
 
             const runResult = runView({ slug: "tasks_with_project" })
             expect(runResult.kind).toBe("query")
-            expect(runResult.result.rows[0]?.project_name).toBe("Mobile app")
+            const firstRow = runResult.result.rows[0] as Record<string, unknown>
+            expect(firstRow.project_name).toBe("Mobile app")
         } finally {
             rmSync(dir, { recursive: true, force: true })
         }

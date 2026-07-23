@@ -1,3 +1,4 @@
+import type { Scope } from "../api/schemas/common.ts"
 import type { MigrationFile } from "../api/schemas/migrate.ts"
 import { getTableColumns, parseTableDefinition, requireTable } from "./catalog.ts"
 import { applyInlineMigration } from "./migrate.ts"
@@ -9,13 +10,13 @@ function apiMigrationName(operation: string, target: string): string {
     return `api:${operation}:${target}:${timestamp}`
 }
 
-export function migrateCreateTable(input: { definition: TableDefinition; scope?: string | null }) {
+export function migrateCreateTable(input: { definition: TableDefinition; scope: Scope }) {
     const migration: MigrationFile = {
         version: 1,
         create: [
             {
                 definition: input.definition,
-                ...(Object.hasOwn(input, "scope") ? { scope: input.scope } : {})
+                scope: input.scope
             }
         ]
     }
@@ -69,7 +70,7 @@ export function migrateSaveView(input: {
     kind: ViewKind
     definition: unknown
     description?: string
-    scope?: string | null
+    scope: Scope
 }) {
     const migration: MigrationFile = {
         version: 1,
@@ -80,7 +81,7 @@ export function migrateSaveView(input: {
                 kind: input.kind,
                 definition: input.definition as Record<string, unknown>,
                 description: input.description,
-                ...(Object.hasOwn(input, "scope") ? { scope: input.scope } : {})
+                scope: input.scope
             }
         ]
     }
@@ -104,7 +105,7 @@ export function migrateDeleteView(input: { slug: string }) {
 function tableSummary(tableName: string) {
     const table = requireTable(tableName)
     return {
-        name: table.name,
+        slug: table.name,
         scope: table.scope,
         definition: parseTableDefinition(table),
         columns: getTableColumns(table),
@@ -131,10 +132,7 @@ function viewSummary(slug: string) {
     }
 }
 
-export function migrateCreateTableApi(input: {
-    definition: TableDefinition
-    scope?: string | null
-}) {
+export function migrateCreateTableApi(input: { definition: TableDefinition; scope: Scope }) {
     migrateCreateTable(input)
     return tableSummary(input.definition.slug)
 }
@@ -155,7 +153,7 @@ export function migrateAlterTableApi(input: {
 
 export function migrateDropTableApi(input: { table: string }) {
     migrateDropTable(input)
-    return { name: input.table }
+    return { slug: input.table }
 }
 
 export function migrateSaveViewApi(input: {
@@ -164,7 +162,7 @@ export function migrateSaveViewApi(input: {
     kind: ViewKind
     definition: unknown
     description?: string
-    scope?: string | null
+    scope: Scope
 }) {
     migrateSaveView(input)
     return viewSummary(input.slug)

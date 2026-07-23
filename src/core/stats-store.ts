@@ -52,7 +52,7 @@ export function measureLiveSnapshot(): StatsSnapshot {
     }
 
     return {
-        table_count: tablesPage.count,
+        table_count: tablesPage.total_count,
         row_count: rowCount,
         database_bytes: databaseBytes
     }

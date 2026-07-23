@@ -47,7 +47,10 @@ export function showValidationToast(messages: string[]): void {
         return
     }
     if (messages.length === 1) {
-        showToastError(messages[0]!)
+        const message = messages[0]
+        if (message !== undefined) {
+            showToastError(message)
+        }
         return
     }
     const preview = messages.slice(0, 3).join("; ")

@@ -4,12 +4,15 @@ import { primaryKeySlugs } from "./table/types.ts"
 
 function rowIdColumnSlug(table: TableRow): string {
     const columns = getTableColumns(table)
-    if (columns.some((column) => column.name === "id")) {
+    if (columns.some((column) => column.slug === "id")) {
         return "id"
     }
     const primaryKeys = primaryKeySlugs(parseTableDefinition(table))
     if (primaryKeys.length === 1) {
-        return primaryKeys[0]!
+        const primaryKeySlug = primaryKeys[0]
+        if (primaryKeySlug !== undefined) {
+            return primaryKeySlug
+        }
     }
     return "id"
 }

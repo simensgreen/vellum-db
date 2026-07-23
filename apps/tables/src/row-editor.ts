@@ -23,7 +23,10 @@ export function rowIdFromRecord(row: Record<string, unknown>, table: TableSummar
     }
     const primaryKeys = primaryKeySlugs(table.definition)
     if (primaryKeys.length === 1) {
-        return String(row[primaryKeys[0]!] ?? "")
+        const primaryKeySlug = primaryKeys[0]
+        if (primaryKeySlug !== undefined) {
+            return String(row[primaryKeySlug] ?? "")
+        }
     }
     return primaryKeys.map((slug) => String(row[slug] ?? "")).join(":")
 }

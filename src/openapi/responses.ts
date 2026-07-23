@@ -7,7 +7,8 @@ export const responseSchemas = {
         hint: z.string().optional()
     }),
     PaginatedMetaSchema: z.object({
-        count: z.number().int().nonnegative(),
+        page_count: z.number().int().nonnegative(),
+        total_count: z.number().int().nonnegative(),
         limit: z.number().int().positive(),
         offset: z.number().int().nonnegative(),
         has_more: z.boolean()
@@ -16,12 +17,12 @@ export const responseSchemas = {
         description: "TableDefinition DSL (slug, name, columns with primaryKey)"
     }),
     TableSummarySchema: z.object({
-        name: z.string(),
+        slug: z.string(),
         scope: z.string().nullable(),
         definition: z.record(z.string(), z.unknown()),
         columns: z.array(
             z.object({
-                name: z.string(),
+                slug: z.string(),
                 sqlType: z.enum(["TEXT", "INTEGER", "REAL"]),
                 notNull: z.boolean(),
                 jsonStored: z.boolean()
@@ -31,7 +32,7 @@ export const responseSchemas = {
         updated_at: z.string()
     }),
     QueryResultSchema: z.object({
-        count: z.number().int().nonnegative(),
+        page_count: z.number().int().nonnegative(),
         total_count: z.number().int().nonnegative(),
         limit: z.number().int().positive(),
         offset: z.number().int().nonnegative(),

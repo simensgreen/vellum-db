@@ -1,5 +1,7 @@
 import type { ZodType } from "zod"
 import { clampLimit, parseOffset } from "../core/route-http.ts"
+import { ApiError } from "./errors.ts"
+import { ScopeSchema } from "./schemas/common.ts"
 import { z } from "./zod.ts"
 
 export function searchParamsRecord(params: URLSearchParams): Record<string, string | undefined> {
@@ -19,7 +21,7 @@ export function parseScopeFromParams(params: URLSearchParams): string | null | u
     if (value === null || value === "") {
         return null
     }
-    return value
+    return ScopeSchema.parse(value)
 }
 
 export function applyPaginationFromParams(
@@ -37,14 +39,20 @@ export function parseRouteQuery<
     TOptions extends {
         pagination?: boolean
         scope?: boolean
-    } = {}
+    } = {
+        pagination?: boolean
+        scope?: boolean
+    }
 >(
     request: Request,
     schema: TSchema,
-    options: TOptions = {} as TOptions
+    options?: TOptions
 ): z.infer<TSchema> &
-    (TOptions["pagination"] extends true ? { limit?: number; offset?: number } : {}) &
-    (TOptions["scope"] extends true ? { scope?: string | null } : {}) {
+    (TOptions["pagination"] extends true
+        ? { limit?: number; offset?: number }
+        : Record<string, never>) &
+    (TOptions["scope"] extends true ? { scope?: string | null } : Record<string, never>) {
+    const resolvedOptions = (options ?? {}) as TOptions
     const params = new URL(request.url).searchParams
     const parsed = schema.parse(searchParamsRecord(params)) as z.infer<TSchema> & {
         limit?: number
@@ -54,14 +62,14 @@ export function parseRouteQuery<
 
     let result: Record<string, unknown> = { ...parsed }
 
-    if (options.pagination) {
+    if (resolvedOptions.pagination) {
         result = {
             ...result,
             ...applyPaginationFromParams(params, parsed)
         }
     }
 
-    if (options.scope) {
+    if (resolvedOptions.scope) {
         const scopeFromParams = parseScopeFromParams(params)
         if (scopeFromParams !== undefined) {
             result.scope = scopeFromParams
@@ -71,8 +79,10 @@ export function parseRouteQuery<
     }
 
     return result as z.infer<TSchema> &
-        (TOptions["pagination"] extends true ? { limit?: number; offset?: number } : {}) &
-        (TOptions["scope"] extends true ? { scope?: string | null } : {})
+        (TOptions["pagination"] extends true
+            ? { limit?: number; offset?: number }
+            : Record<string, never>) &
+        (TOptions["scope"] extends true ? { scope?: string | null } : Record<string, never>)
 }
 
 export async function parseRouteBody<TSchema extends ZodType>(
@@ -81,13 +91,17 @@ export async function parseRouteBody<TSchema extends ZodType>(
 ): Promise<z.infer<TSchema>> {
     const text = await request.text()
     if (text.trim() === "") {
-        throw new Error("Request body must be JSON")
+        throw new ApiError("invalid_json", "Request body must be JSON", {
+            hint: "Send a JSON object in the request body"
+        })
     }
     let json: unknown
     try {
         json = JSON.parse(text)
     } catch {
-        throw new Error("Request body must be valid JSON")
+        throw new ApiError("invalid_json", "Request body must be valid JSON", {
+            hint: "Fix JSON syntax in the request body"
+        })
     }
     return schema.parse(json)
 }

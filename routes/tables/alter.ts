@@ -1,8 +1,4 @@
-import {
-    parseRouteBody,
-    parseRouteQuery,
-    parseScopeFromParams
-} from "../../src/api/parse-request.ts"
+import { parseRouteBody, parseRouteQuery } from "../../src/api/parse-request.ts"
 import { AlterTableBodySchema, AlterTableQuerySchema } from "../../src/api/schemas/tables.ts"
 import { handleRoute } from "../../src/core/route-http.ts"
 import { migrateAlterTableApi } from "../../src/core/schema-migrate.ts"
@@ -12,8 +8,7 @@ export const description = "Alter a structured table"
 
 export async function POST(request: Request): Promise<Response> {
     return handleRoute(async () => {
-        const params = new URL(request.url).searchParams
-        const query = parseRouteQuery(request, AlterTableQuerySchema)
+        const query = parseRouteQuery(request, AlterTableQuerySchema, { scope: true })
         const body = await parseRouteBody(request, AlterTableBodySchema)
         const alterInput: {
             table: string
@@ -33,8 +28,8 @@ export async function POST(request: Request): Promise<Response> {
             })),
             drop: body.drop
         }
-        if (params.has("scope")) {
-            alterInput.scope = parseScopeFromParams(params) ?? null
+        if (Object.hasOwn(query, "scope")) {
+            alterInput.scope = query.scope ?? null
         }
         return migrateAlterTableApi(alterInput)
     })

@@ -11,6 +11,7 @@ import { applyMigration, listMigrationsView, parseMigrationFile } from "../src/c
 import { listMigrations } from "../src/core/migrations-store.ts"
 import { closeDatabase, openDatabase, parseConfig } from "../src/db.ts"
 import { tasksDefinition } from "./fixtures/table-definitions.ts"
+import { tableBySlug } from "./fixtures/table-lookup.ts"
 import { TEST_TABLE_SCOPE } from "./fixtures/test-scope.ts"
 
 const FIXTURES = join(import.meta.dir, "fixtures")
@@ -63,14 +64,15 @@ describe("migrate", () => {
 
             expect(getTable("migrate_items")).not.toBeNull()
             const tables = listTables().tables
-            expect(tables.some((table) => table.name === "migrate_items")).toBe(true)
+            expect(tableBySlug(tables, "migrate_items")).toBeDefined()
 
             const second = applyMigration({ path })
             expect(second.outcome).toBe("already_applied")
             expect(second.id).toBe(first.id)
 
             const history = listMigrations()
-            expect(history.count).toBe(1)
+            expect(history.page_count).toBe(1)
+            expect(history.total_count).toBe(1)
         } finally {
             rmSync(dir, { recursive: true, force: true })
             rmSync(workspace, { recursive: true, force: true })
@@ -88,7 +90,8 @@ describe("migrate", () => {
             expect(getTable("migrate_items")).toBeNull()
 
             const history = listMigrations()
-            expect(history.count).toBe(2)
+            expect(history.page_count).toBe(2)
+            expect(history.total_count).toBe(2)
             expect(history.migrations[0]?.name).toBe("migrate-down.json")
         } finally {
             rmSync(dir, { recursive: true, force: true })
@@ -122,7 +125,8 @@ describe("migrate", () => {
             const page = listMigrationsView({ limit: 1, offset: 0 })
             expect(page.migrations).toHaveLength(1)
             expect(page.has_more).toBe(true)
-            expect(page.count).toBe(1)
+            expect(page.page_count).toBe(1)
+            expect(page.total_count).toBe(2)
         } finally {
             rmSync(dir, { recursive: true, force: true })
             rmSync(workspace, { recursive: true, force: true })
@@ -142,7 +146,8 @@ describe("migrate", () => {
             expect(response.status).toBe(200)
 
             const history = listMigrations()
-            expect(history.count).toBe(1)
+            expect(history.page_count).toBe(1)
+            expect(history.total_count).toBe(1)
             expect(history.migrations[0]?.name.startsWith("api:create:tasks:")).toBe(true)
         } finally {
             rmSync(dir, { recursive: true, force: true })
@@ -169,10 +174,12 @@ describe("migrate", () => {
             )
             expect(listResponse.status).toBe(200)
             const listBody = (await listResponse.json()) as {
-                count: number
+                page_count: number
+                total_count: number
                 migrations: unknown[]
             }
-            expect(listBody.count).toBe(1)
+            expect(listBody.page_count).toBe(1)
+            expect(listBody.total_count).toBe(1)
             expect(listBody.migrations).toHaveLength(1)
         } finally {
             rmSync(dir, { recursive: true, force: true })

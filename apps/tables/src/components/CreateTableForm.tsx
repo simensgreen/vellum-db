@@ -32,7 +32,7 @@ export function CreateTableForm({
         existingTables.map((table) => table.definition)
     )
     const knownTables = new Map<string, TableDefinition>(
-        existingTables.map((table) => [table.name, table.definition])
+        existingTables.map((table) => [table.slug, table.definition])
     )
 
     const [visual, setVisual] = useState<VisualTable>(emptyVisualTable())

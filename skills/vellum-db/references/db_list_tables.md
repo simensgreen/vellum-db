@@ -1,29 +1,29 @@
 # db_list_tables
 
-Discover registered tables: name, scope, **TableDefinition**, column slugs, timestamps. Prefer this before query or write when names or columns are unknown.
+Discover registered tables by **slug**, scope, **TableDefinition**, column slugs, timestamps. Prefer this before query or write when slugs or columns are unknown.
 
 ## Inputs
 
 | Field | Required | Notes |
 | --- | --- | --- |
 | `scope` | no | Exact scope (`[a-z][a-z0-9_]*`). `null` = only unscoped. Omit = all |
-| `name_prefix` | no | Table names starting with this prefix |
+| `slug_prefix` | no | Table slugs starting with this prefix |
 | `limit` | no | Page size (capped by `maxRowsPerQuery`) |
 | `offset` | no | Skip N tables |
 
 ## Output
 
-`{ tables, count, limit, offset, has_more }`. Each table includes:
+`{ tables, page_count, total_count, limit, offset, has_more }`. Each table includes:
 
 | Field | Meaning |
 | --- | --- |
-| `name` | Table slug (same as `definition.slug`) |
+| `slug` | Table identifier (same as `definition.slug`) |
 | `scope` | Optional scope label or `null` |
 | `definition` | Full **TableDefinition** object |
-| `columns` | `{ name, sqlType, notNull, jsonStored }[]` — `name` is the column **slug** |
+| `columns` | `{ slug, sqlType, notNull, jsonStored }[]` |
 | `created_at` / `updated_at` | ISO timestamps |
 
-Use `definition.columns` for display names and constraints; use `columns[].name` (slugs) in `db_query` filters and row objects.
+Use `definition.columns` for display names and constraints; use column **slugs** in `db_query` filters and row objects.
 
 ## Examples
 
@@ -51,10 +51,10 @@ Use `definition.columns` for display names and constraints; use `columns[].name`
 }
 ```
 
-**Example excerpt** — name prefix:
+**Example excerpt** — slug prefix:
 
 ```json
 {
-  "name_prefix": "task"
+  "slug_prefix": "task"
 }
 ```

@@ -2,26 +2,27 @@ import { getTableColumns, listTables, parseTableDefinition } from "./catalog.ts"
 
 export function listTablesView(input: {
     scope?: string | null
-    name_prefix?: string
+    slug_prefix?: string
     limit?: number
     offset?: number
 }) {
     const page = listTables({
         scope: input.scope,
-        name_prefix: input.name_prefix,
+        slug_prefix: input.slug_prefix,
         limit: input.limit,
         offset: input.offset
     })
     return {
         tables: page.tables.map((table) => ({
-            name: table.name,
+            slug: table.name,
             scope: table.scope,
             definition: parseTableDefinition(table),
             columns: getTableColumns(table),
             created_at: table.created_at,
             updated_at: table.updated_at
         })),
-        count: page.count,
+        page_count: page.page_count,
+        total_count: page.total_count,
         limit: page.limit,
         offset: page.offset,
         has_more: page.has_more

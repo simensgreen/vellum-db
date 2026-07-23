@@ -9,6 +9,8 @@ export const ScopeSchema = z.string().regex(/^[a-z][a-z0-9_]*$/, {
     message: "scope must match [a-z][a-z0-9_]*"
 })
 
+export type Scope = z.infer<typeof ScopeSchema>
+
 export const OnConflictSchema = z.enum(["abort", "ignore", "replace"], {
     message: 'on_conflict must be "abort", "ignore", or "replace"'
 })

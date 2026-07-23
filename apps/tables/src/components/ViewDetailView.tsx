@@ -47,8 +47,8 @@ export function ViewDetailView({
             {runError ? <div class="app-message app-message--error">{runError}</div> : null}
             <ViewResultsGrid
                 rows={result?.rows ?? null}
-                count={result?.count ?? 0}
-                totalCount={result?.total_count}
+                count={result?.page_count ?? 0}
+                totalCount={result?.total_count ?? 0}
                 limit={result?.limit ?? 50}
                 offset={result?.offset ?? 0}
                 hasMore={result?.has_more ?? false}

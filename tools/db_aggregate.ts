@@ -25,7 +25,7 @@ const refJoinItemSchema = {
 const inputSchema = {
     type: "object",
     properties: {
-        table: { type: "string" },
+        table: { type: "string", description: "Source table slug" },
         metrics: {
             type: "array",
             minItems: 1,

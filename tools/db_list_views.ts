@@ -11,8 +11,9 @@ const inputSchema = {
             description: "Filter by view kind"
         },
         scope: {
-            type: "string",
-            description: "Filter by scope ([a-z][a-z0-9_]*)"
+            type: ["string", "null"],
+            description:
+                "Exact scope filter ([a-z][a-z0-9_]*). null = only unscoped views. Omit = all scopes."
         },
         slug_prefix: {
             type: "string",
@@ -33,7 +34,7 @@ export default {
         return runTool(input, inputSchema, (validated) =>
             listViewsView({
                 kind: validated.kind as "query" | "aggregate" | undefined,
-                scope: typeof validated.scope === "string" ? validated.scope : undefined,
+                scope: validated.scope as string | null | undefined,
                 slug_prefix:
                     typeof validated.slug_prefix === "string" ? validated.slug_prefix : undefined,
                 limit: typeof validated.limit === "number" ? validated.limit : undefined,

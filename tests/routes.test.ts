@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { GET as queryRows } from "../routes/rows.ts"
+import { POST as sqlRoute } from "../routes/sql.ts"
 import { DELETE as dropTableRoute } from "../routes/tables/drop.ts"
 import { POST as createTableRoute, GET as listTables } from "../routes/tables.ts"
 import { ensureMetaSchema } from "../src/core/catalog.ts"
@@ -28,10 +29,12 @@ describe("routes", () => {
             expect(response.status).toBe(200)
             const body = (await response.json()) as {
                 tables: unknown[]
-                count: number
+                page_count: number
+                total_count: number
             }
             expect(body.tables).toEqual([])
-            expect(body.count).toBe(0)
+            expect(body.page_count).toBe(0)
+            expect(body.total_count).toBe(0)
         } finally {
             rmSync(dir, { recursive: true, force: true })
         }
@@ -51,10 +54,10 @@ describe("routes", () => {
 
             const listResponse = await listTables(new Request("http://local/tables"))
             const listBody = (await listResponse.json()) as {
-                tables: Array<{ name: string; definition: { slug: string } }>
+                tables: Array<{ slug: string; definition: { slug: string } }>
             }
             expect(listBody.tables).toHaveLength(1)
-            expect(listBody.tables[0]?.name).toBe("tasks")
+            expect(listBody.tables[0]?.slug).toBe("tasks")
             expect(listBody.tables[0]?.definition.slug).toBe("tasks")
 
             const rowsResponse = await queryRows(
@@ -122,6 +125,25 @@ describe("routes", () => {
             )
             expect(response.status).toBe(403)
         } finally {
+            rmSync(dir, { recursive: true, force: true })
+        }
+    })
+
+    test("POST /sql returns 403 when rawSqlMode is off", async () => {
+        const dir = mkdtempSync(join(tmpdir(), "vellum-db-routes-"))
+        openDatabase(dir, parseConfig({ maxRowsPerQuery: 100, rawSqlMode: "off" }))
+        ensureMetaSchema()
+        try {
+            const response = await sqlRoute(
+                new Request("http://local/sql", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ sql: "SELECT 1" })
+                })
+            )
+            expect(response.status).toBe(403)
+        } finally {
+            closeDatabase()
             rmSync(dir, { recursive: true, force: true })
         }
     })

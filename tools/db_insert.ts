@@ -6,7 +6,7 @@ import { runTool } from "../src/tool-result.ts"
 const inputSchema = {
     type: "object",
     properties: {
-        table: { type: "string" },
+        table: { type: "string", description: "Target table slug" },
         row: {
             type: "object",
             description:

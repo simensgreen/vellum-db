@@ -6,7 +6,7 @@ Compute metrics (`count`, `sum`, `avg`, `min`, `max`) with optional `group_by`, 
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `table` | yes | Table name |
+| `table` | yes | Table slug |
 | `metrics` | yes | Non-empty array of `{ fn, column?, as }` |
 | `group_by` | no | Base or join output column names |
 | `filter` | no | JSON filter (WHERE) |
@@ -20,7 +20,7 @@ Compute metrics (`count`, `sum`, `avg`, `min`, `max`) with optional `group_by`, 
 
 ## Output
 
-`{ table, count, limit, offset, has_more, rows }` — each row is a group (or a single rollup if no `group_by`).
+`{ table, page_count, total_count, limit, offset, has_more, rows }` — each row is a group (or a single rollup if no `group_by`).
 
 ## Examples
 

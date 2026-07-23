@@ -1,12 +1,12 @@
 {
   "name": "vellum-db",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Structured storage for Vellum agents: TableDefinition tables, query/aggregate via JSON, named views.",
   "private": true,
   "license": "MIT",
   "type": "module",
   "engines": {
-    "node": ">=20.12.0"
+    "bun": ">=1.2.0"
   },
   "peerDependencies": {
     "@vellumai/plugin-api": "^0.8.0"
@@ -28,7 +28,7 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit && tsc --noEmit -p apps/tables",
-    "check": "bun run lint && bun test",
+    "check": "bun run lint && bun run typecheck && bun test",
     "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true"
   },
   "devDependencies": {

@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+
 declare global {
     interface Window {
         vellum?: {

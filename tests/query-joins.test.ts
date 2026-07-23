@@ -10,6 +10,7 @@ import type { TableDefinition } from "../src/core/table/types.ts"
 import { saveView } from "../src/core/views.ts"
 import { runView } from "../src/core/views-api.ts"
 import { closeDatabase, openDatabase, parseConfig } from "../src/db.ts"
+import { tableBySlug } from "./fixtures/table-lookup.ts"
 import { TEST_TABLE_SCOPE } from "./fixtures/test-scope.ts"
 
 const regionsDefinition: TableDefinition = {
@@ -101,9 +102,9 @@ function seedWorkGraph(): {
     createUserTable(projectsDefinition, { scope: TEST_TABLE_SCOPE })
     createUserTable(tasksDefinition, { scope: TEST_TABLE_SCOPE })
 
-    const regionsTable = listTables().tables.find((table) => table.name === "regions")!
-    const projectsTable = listTables().tables.find((table) => table.name === "projects")!
-    const tasksTable = listTables().tables.find((table) => table.name === "tasks")!
+    const regionsTable = tableBySlug(listTables().tables, "regions")
+    const projectsTable = tableBySlug(listTables().tables, "projects")
+    const tasksTable = tableBySlug(listTables().tables, "tasks")
 
     const europe = insertTableRow(regionsTable, { name: "Europe" })
     const linkedProject = insertTableRow(projectsTable, {
@@ -160,8 +161,8 @@ describe("query joins", () => {
                 columns: ["title", "project_name"]
             })
 
-            expect(leftResult.count).toBe(2)
-            expect(innerResult.count).toBe(2)
+            expect(leftResult.page_count).toBe(2)
+            expect(innerResult.page_count).toBe(2)
         } finally {
             rmSync(dir, { recursive: true, force: true })
         }
@@ -212,7 +213,8 @@ describe("query joins", () => {
                 columns: ["title", "project_name", "region_name"]
             })
 
-            expect(result.count).toBe(2)
+            expect(result.page_count).toBe(2)
+            expect(result.total_count).toBe(2)
             expect(result.rows.every((row) => row.region_name === "Europe")).toBe(true)
         } finally {
             rmSync(dir, { recursive: true, force: true })
@@ -266,9 +268,11 @@ describe("aggregate joins", () => {
                 limit: 10
             })
 
-            expect(result.count).toBe(1)
-            expect(result.rows[0]?.project_name).toBe("Website")
-            expect(result.rows[0]?.total_points).toBe(5)
+            expect(result.page_count).toBe(1)
+            expect(result.total_count).toBe(1)
+            const firstRow = result.rows[0] as Record<string, unknown>
+            expect(firstRow.project_name).toBe("Website")
+            expect(firstRow.total_points).toBe(5)
         } finally {
             rmSync(dir, { recursive: true, force: true })
         }

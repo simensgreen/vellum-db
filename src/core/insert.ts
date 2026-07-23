@@ -110,7 +110,10 @@ function extractPrimaryKeyValues(
 
 function resolveResultId(primaryKeySlugs: string[], row: Record<string, unknown>): string {
     if (primaryKeySlugs.length === 1) {
-        return String(row[primaryKeySlugs[0]!])
+        const primaryKeySlug = primaryKeySlugs[0]
+        if (primaryKeySlug !== undefined) {
+            return String(row[primaryKeySlug])
+        }
     }
     return primaryKeySlugs.map((slug) => String(row[slug])).join(":")
 }
@@ -133,8 +136,8 @@ export function insertTableRow(
     validateRowAgainstSchema(table.name, table.schema_json, rowWithDefaults)
 
     const columns = getTableColumns(table)
-    const columnNames = columns.map((column) => column.name)
-    const values = columns.map((column) => encodeCellValue(rowWithDefaults[column.name], column))
+    const columnNames = columns.map((column) => column.slug)
+    const values = columns.map((column) => encodeCellValue(rowWithDefaults[column.slug], column))
 
     const primaryKeyValues = extractPrimaryKeyValues(rowWithDefaults, primaryKeySlugsList)
     const explicitPrimaryKey = primaryKeySlugsList.every((slug) => Object.hasOwn(rowInput, slug))

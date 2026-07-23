@@ -4,14 +4,14 @@ import { vellumFetch } from "./platform/bridge.ts"
 const API_PREFIX = "/v1/x/plugins/vellum-db"
 
 export type ColumnSpec = {
-    name: string
+    slug: string
     sqlType: "TEXT" | "INTEGER" | "REAL"
     notNull: boolean
     jsonStored: boolean
 }
 
 export type TableSummary = {
-    name: string
+    slug: string
     scope: string | null
     definition: TableDefinition
     columns: ColumnSpec[]
@@ -21,7 +21,8 @@ export type TableSummary = {
 
 export type TablesListResponse = {
     tables: TableSummary[]
-    count: number
+    page_count: number
+    total_count: number
     limit: number
     offset: number
     has_more: boolean
@@ -29,7 +30,7 @@ export type TablesListResponse = {
 
 export type RowsResponse = {
     table: string
-    count: number
+    page_count: number
     total_count: number
     limit: number
     offset: number
@@ -203,12 +204,9 @@ export async function importTableFile(
 
 export async function createTable(input: {
     definition: TableDefinition
-    scope?: string
+    scope: string
 }): Promise<unknown> {
-    const params = new URLSearchParams()
-    if (input.scope) {
-        params.set("scope", input.scope)
-    }
+    const params = new URLSearchParams({ scope: input.scope })
     const query = params.toString()
     const response = await vellumFetch(`${API_PREFIX}/tables${query ? `?${query}` : ""}`, {
         method: "POST",
@@ -273,7 +271,8 @@ export type ViewSummary = {
 
 export type ViewsListResponse = {
     views: ViewSummary[]
-    count: number
+    page_count: number
+    total_count: number
     limit: number
     offset: number
     has_more: boolean
@@ -285,8 +284,8 @@ export type ViewRunResponse = {
     kind: ViewKind
     result: {
         table?: string
-        count: number
-        total_count?: number
+        page_count: number
+        total_count: number
         limit: number
         offset: number
         has_more: boolean

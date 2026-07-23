@@ -11,7 +11,7 @@ Agents often need durable, structured state: expenses, diet logs, birthdays, pri
 Without a shared store, each feature tends to ship its own plugin and its own CRUD tools. That duplicates work and fragments data. **vellum-db** is the opposite approach:
 
 - **One plugin** owns persistence, validation, query, and aggregation.
-- **Domain logic lives in skills** — table names, schemas, when to query, which views to run, and why — not in new TypeScript tools.
+- **Domain logic lives in skills** — table slugs, schemas, when to query, which views to run, and why — not in new TypeScript tools.
 - An agent that loads the right skill can use the shared tools immediately. No per-domain CRUD code required.
 
 Example: the expense tracker skill in [`examples/expenses/`](examples/expenses/) documents `category` and `expenses` tables, seed categories, saved views with date params, and how to log or report spending. Copy to workspace `skills/expenses/` to activate (see [references/install.md](examples/expenses/references/install.md)). The skill does not implement storage; it teaches the agent how to drive **vellum-db**.
@@ -30,7 +30,7 @@ If the shape fits “rows in tables + filters + rollups,” a skill on top of th
 
 ## How it works (agent view)
 
-1. **Define schema** — flat migration files (`db_migrate`) or Database app REST. **`scope` is required** when creating tables/views; omit `scope` on list calls to see all. See **`vellum-db-meta`**.
+1. **Define schema** — flat migration files (`db_migrate`) or Database app REST. **`scope` is required** when creating tables/views; omit `scope` on list calls to see all scopes, or pass `scope: null` / `?scope=` to list unscoped only. See **`vellum-db-meta`**.
 2. **Write and change rows** — `db_insert`, `db_update`, `db_delete` with JSON filters (column slugs).
 3. **Read and analyze** — `db_query` (filter / order / page) and `db_aggregate` (count, sum, avg, min, max, group by).
 4. **Reuse analysis** — `db_run_view` with `$param` placeholders (views defined in domain migrations).
@@ -44,13 +44,13 @@ Built-in skills:
 | `vellum-db` | `skill_load { "skill": "vellum-db" }` | Query, aggregate, row ops, views, optional SQL escape hatch |
 | `vellum-db-meta` | `skill_load { "skill": "vellum-db-meta" }` | Author and apply schema migrations |
 
-Domain skills should depend on these: spell out table names, schemas, and procedures; call the shared `db_*` tools.
+Domain skills should depend on these: spell out table slugs, schemas, and procedures; call the shared `db_*` tools.
 
 Example domain skill (not bundled in the plugin index): [`examples/expenses/`](examples/expenses/) — personal expense tracking with category reference table and parameterized views.
 
 ## REST API
 
-OpenAPI 3.1 spec: [`openapi.json`](./openapi.json) (generated via [`@asteasolutions/zod-to-openapi`](https://github.com/asteasolutions/zod-to-openapi) — `bun run openapi`). Base URL: `/v1/x/plugins/vellum-db/`; auth via Vellum gateway (`settings.read`).
+OpenAPI 3.1 spec: [`openapi.json`](./openapi.json) (generated via [`@asteasolutions/zod-to-openapi`](https://github.com/asteasolutions/zod-to-openapi) — `bun run openapi`). Base URL: `/v1/x/plugins/vellum-db/`; auth via Vellum gateway (`settings.read`). Paginated responses use `page_count`, `total_count`, `limit`, `offset`, `has_more`. Errors: `{ type, msg?, hint? }`.
 
 ## Database app
 
@@ -143,9 +143,7 @@ Longer-term options (vendor / zero-deps rewrite / ship `node_modules`) are liste
 
 ```bash
 bun install
-bunx tsc --noEmit
-bunx tsc --noEmit -p apps/tables
-bun test
+bun run check     # lint + typecheck + test (CI parity)
 bun run dev:app   # Database app UI at http://localhost:5173
 ```
 

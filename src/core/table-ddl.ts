@@ -1,3 +1,4 @@
+import type { Scope } from "../api/schemas/common.ts"
 import {
     alterUserTable,
     createUserTable,
@@ -9,14 +10,14 @@ import { notifyInvalidation } from "./sync.ts"
 import { invalidationTagsForCatalogChange } from "./sync-tags.ts"
 import type { TableDefinition } from "./table/types.ts"
 
-export function createTable(input: { definition: TableDefinition; scope?: string | null }) {
+export function createTable(input: { definition: TableDefinition; scope: Scope }) {
     const table = createUserTable(input.definition, {
         scope: input.scope
     })
     notifyInvalidation(invalidationTagsForCatalogChange(table.name))
     const definition = parseTableDefinition(table)
     return {
-        name: table.name,
+        slug: table.name,
         scope: table.scope,
         definition,
         columns: getTableColumns(table),
@@ -42,7 +43,7 @@ export function alterTable(input: {
     })
     notifyInvalidation(invalidationTagsForCatalogChange(table.name))
     return {
-        name: table.name,
+        slug: table.name,
         scope: table.scope,
         definition: parseTableDefinition(table),
         columns: getTableColumns(table),
@@ -52,6 +53,6 @@ export function alterTable(input: {
 
 export function dropTable(input: { table: string }) {
     const result = dropUserTable(input.table)
-    notifyInvalidation(invalidationTagsForCatalogChange(result.name))
+    notifyInvalidation(invalidationTagsForCatalogChange(result.slug))
     return result
 }

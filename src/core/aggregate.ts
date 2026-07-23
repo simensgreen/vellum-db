@@ -6,6 +6,7 @@ import { requireTable } from "./catalog.ts"
 import {
     type AggregateDefinition,
     type AggregateMetric,
+    compileAggregateCountQuery,
     compileAggregateQuery,
     type OrderSpec,
     type RefJoinSpec
@@ -20,13 +21,18 @@ export function executeAggregateDefinition(definition: AggregateDefinition) {
     const fetched = getDatabase()
         .query(compiled.text)
         .all(...asBindings(compiled.values))
-    const page = pageFromRows(fetched, compiled.limit, compiled.offset)
-    if (isUserTableName(table.name) && page.count > 0) {
-        recordStatsDelta({ reads: page.count })
+    const countCompiled = compileAggregateCountQuery(definition)
+    const totalRow = getDatabase()
+        .query(countCompiled.text)
+        .get(...asBindings(countCompiled.values)) as { total: number }
+    const page = pageFromRows(fetched, compiled.limit, compiled.offset, totalRow.total)
+    if (isUserTableName(table.name) && page.page_count > 0) {
+        recordStatsDelta({ reads: page.page_count })
     }
     return {
         table: definition.table,
-        count: page.count,
+        page_count: page.page_count,
+        total_count: page.total_count,
         limit: page.limit,
         offset: page.offset,
         has_more: page.has_more,

@@ -26,6 +26,49 @@ function isSelectStatement(sqlText: string): boolean {
     return upper.startsWith("SELECT") || upper.startsWith("WITH")
 }
 
+function stripSqlLiterals(sqlText: string): string {
+    let stripped = ""
+    let index = 0
+    while (index < sqlText.length) {
+        const char = sqlText[index]
+        if (char === "'") {
+            index += 1
+            while (index < sqlText.length) {
+                if (sqlText[index] === "'" && sqlText[index + 1] === "'") {
+                    index += 2
+                    continue
+                }
+                if (sqlText[index] === "'") {
+                    index += 1
+                    break
+                }
+                index += 1
+            }
+            stripped += " "
+            continue
+        }
+        if (char === '"') {
+            index += 1
+            while (index < sqlText.length) {
+                if (sqlText[index] === '"' && sqlText[index + 1] === '"') {
+                    index += 2
+                    continue
+                }
+                if (sqlText[index] === '"') {
+                    index += 1
+                    break
+                }
+                index += 1
+            }
+            stripped += " "
+            continue
+        }
+        stripped += char
+        index += 1
+    }
+    return stripped
+}
+
 export function guardRawSql(sqlText: string): GuardedSql {
     const mode = getConfig().rawSqlMode
     if (mode === "off") {
@@ -48,8 +91,9 @@ export function guardRawSql(sqlText: string): GuardedSql {
         throw new Error("Only SELECT (or WITH ... SELECT) statements are allowed")
     }
 
+    const keywordScanTarget = stripSqlLiterals(trimmed)
     for (const keyword of FORBIDDEN) {
-        if (new RegExp(`\\b${keyword}\\b`, "i").test(trimmed)) {
+        if (new RegExp(`\\b${keyword}\\b`, "i").test(keywordScanTarget)) {
             throw new Error(`Forbidden keyword in raw SQL: ${keyword}`)
         }
     }

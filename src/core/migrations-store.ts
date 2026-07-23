@@ -94,22 +94,27 @@ export function listMigrations(input: { limit?: number; offset?: number } = {}):
         name: string
         applied_at: string
     }>
-    count: number
+    page_count: number
+    total_count: number
     limit: number
     offset: number
     has_more: boolean
 } {
     const database = getDatabase()
     const { limit, offset } = resolvePage(input.limit, input.offset)
+    const totalRow = database.query("SELECT COUNT(*) AS total FROM _migrations").get() as {
+        total: number
+    }
     const rows = database
         .query<Pick<MigrationRow, "id" | "hash" | "name" | "applied_at">, [number, number]>(
             "SELECT id, hash, name, applied_at FROM _migrations ORDER BY id DESC LIMIT ? OFFSET ?"
         )
         .all(limit + 1, offset)
-    const page = pageFromRows(rows, limit, offset)
+    const page = pageFromRows(rows, limit, offset, totalRow.total)
     return {
         migrations: page.items,
-        count: page.count,
+        page_count: page.page_count,
+        total_count: page.total_count,
         limit: page.limit,
         offset: page.offset,
         has_more: page.has_more

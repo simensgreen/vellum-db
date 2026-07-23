@@ -122,7 +122,7 @@ export function EditTableForm({
         setSubmitting(true)
         try {
             await alterTable({
-                table: table.name,
+                table: table.slug,
                 add,
                 drop
             })
@@ -139,7 +139,7 @@ export function EditTableForm({
     return (
         <div class="form-panel v-card">
             <div class="form-panel__header">
-                <h2>Edit schema: {table.name}</h2>
+                <h2>Edit schema: {table.definition.name}</h2>
                 <button type="button" class="v-button secondary" onClick={onCancel}>
                     Cancel
                 </button>

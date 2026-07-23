@@ -2,7 +2,7 @@ import { z } from "../zod.ts"
 import { PaginationQuerySchema, ScopeSchema, TableNameSchema } from "./common.ts"
 
 export const ListTablesQuerySchema = PaginationQuerySchema.extend({
-    name_prefix: z.string().optional()
+    slug_prefix: z.string().optional()
 })
 
 export const AlterTableQuerySchema = z.object({

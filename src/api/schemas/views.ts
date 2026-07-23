@@ -10,7 +10,6 @@ import { optionalJsonQueryString } from "./json-query.ts"
 
 export const ListViewsQuerySchema = PaginationQuerySchema.extend({
     kind: ViewKindSchema.optional(),
-    scope: ScopeSchema.optional(),
     slug_prefix: z.string().optional()
 })
 

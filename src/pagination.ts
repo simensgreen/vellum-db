@@ -4,7 +4,8 @@ export type PageMeta = {
     limit: number
     offset: number
     has_more: boolean
-    count: number
+    page_count: number
+    total_count: number
 }
 
 export function resolvePage(
@@ -32,13 +33,15 @@ export function resolvePage(
 export function pageFromRows<T>(
     rowsWithMaybeExtra: T[],
     limit: number,
-    offset: number
+    offset: number,
+    total_count: number
 ): { items: T[] } & PageMeta {
     const has_more = rowsWithMaybeExtra.length > limit
     const items = has_more ? rowsWithMaybeExtra.slice(0, limit) : rowsWithMaybeExtra
     return {
         items,
-        count: items.length,
+        page_count: items.length,
+        total_count,
         limit,
         offset,
         has_more

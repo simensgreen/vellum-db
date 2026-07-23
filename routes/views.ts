@@ -13,7 +13,8 @@ export const description = "List or save named views"
 export async function GET(request: Request): Promise<Response> {
     return handleRoute(() => {
         const query = parseRouteQuery(request, ListViewsQuerySchema, {
-            pagination: true
+            pagination: true,
+            scope: true
         })
         return listViewsView({
             kind: query.kind,

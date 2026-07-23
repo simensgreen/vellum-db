@@ -23,7 +23,7 @@ function decodeQueryRow(
     joinOutputs: ReturnType<typeof resolveQueryJoinOutputs>
 ): Record<string, unknown> {
     const baseValues = Object.fromEntries(
-        baseColumns.map((column) => [column.name, row[column.name]])
+        baseColumns.map((column) => [column.slug, row[column.slug]])
     )
     const decoded = decodeRow(baseValues, baseColumns, baseSchema)
 
@@ -36,7 +36,7 @@ function decodeQueryRow(
         const joinTable = requireTable(joinOutput.joinTableName)
         const joinColumns = getTableColumns(joinTable)
         const joinSchema = JSON.parse(joinTable.schema_json) as JsonSchemaObject
-        const joinColumn = joinColumns.find((column) => column.name === joinOutput.sourceColumn)
+        const joinColumn = joinColumns.find((column) => column.slug === joinOutput.sourceColumn)
         if (!joinColumn) {
             decoded[joinOutput.outputColumn] = raw
             continue
@@ -60,18 +60,18 @@ export function executeQueryDefinition(definition: QueryDefinition) {
     const fetched = getDatabase()
         .query(compiled.text)
         .all(...asBindings(compiled.values)) as Record<string, unknown>[]
-    const page = pageFromRows(fetched, compiled.limit, compiled.offset)
     const countCompiled = compileCountQuery(definition)
     const totalRow = getDatabase()
         .query(countCompiled.text)
         .get(...asBindings(countCompiled.values)) as { total: number }
-    if (isUserTableName(table.name) && page.count > 0) {
-        recordStatsDelta({ reads: page.count })
+    const page = pageFromRows(fetched, compiled.limit, compiled.offset, totalRow.total)
+    if (isUserTableName(table.name) && page.page_count > 0) {
+        recordStatsDelta({ reads: page.page_count })
     }
     return {
         table: table.name,
-        count: page.count,
-        total_count: totalRow.total,
+        page_count: page.page_count,
+        total_count: page.total_count,
         limit: page.limit,
         offset: page.offset,
         has_more: page.has_more,

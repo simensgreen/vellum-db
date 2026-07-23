@@ -16,6 +16,7 @@ This repository root **is** the plugin (`package.json` + `hooks/` + `tools/` + `
 | File IO | `db_load` / `db_dump` (`csv` \| `json` \| `jsonl` \| `xlsx` via SheetJS `xlsx`) |
 | Tables app | Preact (`apps/tables/`) |
 | Lint / format | Biome (`biome.json`; `bun run lint`) |
+| Runtime | **Bun** `>=1.2.0` only (`engines.bun` in `package.json`; Vellum host; `bun:sqlite`, `bun test`) — not Node |
 | Plugin contract | `@vellumai/plugin-api` peer `^0.8.0` (also `devDependency` for local `tsc`) |
 
 ## Layout
@@ -67,7 +68,7 @@ bun run lint          # Biome: format + lint (errors fail)
 bun run lint:fix      # auto-fix safe + organize imports
 bun run format        # format only
 bun run typecheck     # tsc root + apps/tables
-bun run check         # lint + test (CI parity)
+bun run check         # lint + typecheck + test (CI parity)
 bunx tsc --noEmit
 bunx tsc --noEmit -p apps/tables
 bun test
@@ -86,8 +87,9 @@ bun run dev:app   # Tables app UI: http://localhost:5173 (temp SQLite + route pr
 - Validate table definitions and rows with Ajv (`src/core/table/` DSL + compiled row schemas).
 - Prefer JSON tools over `db_sql` for routine work.
 - Tool `input_schema` MUST NOT set `additionalProperties: false` at the tool-input root (or anywhere that rejects host-injected fields). Vellum injects `activity` into tool calls; rejecting unknown properties breaks every invocation.
-- List tools that can return many rows use `limit`/`offset` and return `has_more`.
-- Optional table or view `scope` (`[a-z][a-z0-9_]*`) filters `db_list_tables` / `db_list_views`; **required** on create (migration `create[]` / `views[]`, `POST /tables?scope=`, save view query).
+- Paginated list/query responses return `page_count`, `total_count`, `limit`, `offset`, `has_more` (`page_count` = rows in this page; `total_count` = full match set).
+- Optional table or view `scope` (`[a-z][a-z0-9_]*`) filters `db_list_tables` / `db_list_views`; **required** on create (migration `create[]` / `views[]`, `POST /tables?scope=`, save view query). List filter: omit `scope` = all; `scope: null` (tool) or `?scope=` empty (REST) = unscoped only.
+- **Slug vs name:** `slug` is the identifier everywhere (API paths, DB lookups, tools, joins, filters). `name` is UI display text only (TableDefinition/view display name). REST list tables returns `slug`; filter by `slug_prefix`. `_tables.name` column stores table slug (SQLite legacy column name).
 - View query definitions support ref joins (`left`/`inner`/`right`, multi-hop) on `kind: query` and `kind: aggregate`; see `skills/vellum-db/references/view-query-model.md`.
 - `db_load` / `db_dump`: relative `path` under the Vellum workspace; `mode` is `csv` | `json` | `jsonl` | `xlsx`.
 - REST file IO (Database app): `GET /export?table=&mode=` (download); `POST /import?table=&filename=` (raw body; format from filename or `mode` query).
@@ -100,7 +102,8 @@ bun run dev:app   # Tables app UI: http://localhost:5173 (temp SQLite + route pr
 - Vellum app bundler rejects imports outside `apps/<name>/` (`validateImportPaths` in vellum-assistant `app-compiler.ts`). Mirror `src/core/sync-tags.ts` byte-identical to `apps/tables/src/sync-tags.ts`; `tests/sync-tags-parity.test.ts` enforces this.
 - Database app display name is **Database** (UI title/header only; app id stays `plugins~vellum-db~tables`). Use host `--v-*` tokens and `.v-*` classes; layout-only CSS in `apps/tables/src/styles.css`. Vendored sandbox CSS: `apps/tables/vendor/vellum-design-system.css`; Figma palette bridge: `apps/tables/src/vellum-theme-bridge.css` (matches `@vellumai/design-library` tokens).
 - Library card preview: detect via `isCardPreview()` (`window.vellum` without `fetch`); render static `CardPreview` — no API calls in card mode.
-- REST reads: query params (JSON fields URL-encoded). REST mutations: table/name in query, payload in JSON body.
+- REST reads: query params (JSON fields URL-encoded). REST mutations: table or view **slug** in query, payload in JSON body.
+- REST errors: `{ type, msg?, hint? }`; `403` for config-gated features; `500` for internal errors.
 - REST validation: `src/api/schemas/` + `parseRouteQuery` / `parseRouteBody`; OpenAPI imports the same schemas.
 - Edit request schemas in `src/api/schemas/`; pre-commit refreshes `openapi.json` (or run `bun run openapi` manually).
 

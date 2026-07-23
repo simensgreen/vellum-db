@@ -82,7 +82,7 @@ export type AggregateDefinition = {
 const AGGREGATE_FNS = new Set(["count", "sum", "avg", "min", "max"])
 
 function columnSet(columns: ColumnSpec[]): Set<string> {
-    return new Set(columns.map((column) => column.name))
+    return new Set(columns.map((column) => column.slug))
 }
 
 function normalizeJoinType(type: JoinType | undefined): JoinType {
@@ -165,7 +165,7 @@ function seedBaseOutputSql(baseTable: TableRow): {
 
     const known = new Set(baseKnown)
     const outputSql = new Map<string, string>()
-    const defaultSelectColumns = ["id", ...baseColumns.map((column) => column.name)]
+    const defaultSelectColumns = ["id", ...baseColumns.map((column) => column.slug)]
     const basePrefix = quoteIdentExport(baseTableName)
 
     for (const column of baseCompiled) {
@@ -373,7 +373,7 @@ export function compileSelectQuery(definition: QueryDefinition): {
         const selectColumns =
             definition.columns && definition.columns.length > 0
                 ? definition.columns
-                : ["id", ...columns.map((column) => column.name)]
+                : ["id", ...columns.map((column) => column.slug)]
         assertKnownColumns(selectColumns, known, "select")
 
         const selectSql = sql.join(
@@ -449,7 +449,10 @@ export function compileCountQuery(
     return { text, values }
 }
 
-export function compileAggregateQuery(definition: AggregateDefinition): {
+export function compileAggregateQuery(
+    definition: AggregateDefinition,
+    options: { paginate?: boolean } = {}
+): {
     text: string
     values: unknown[]
     limit: number
@@ -544,11 +547,40 @@ export function compileAggregateQuery(definition: AggregateDefinition): {
         text += ` ORDER BY ${orderParts.join(", ")}`
     }
 
-    const paginated = appendPaginationClause(text, values, definition.limit, definition.offset)
+    const paginate = options.paginate !== false
+    if (paginate) {
+        const paginated = appendPaginationClause(text, values, definition.limit, definition.offset)
+        return {
+            text: paginated.text,
+            values: paginated.values,
+            limit: paginated.limit,
+            offset: paginated.offset
+        }
+    }
+
+    const resolvedLimit = clampLimit(definition.limit)
+    let resolvedOffset = 0
+    if (definition.offset !== undefined) {
+        if (!Number.isFinite(definition.offset) || definition.offset < 0) {
+            throw new Error("offset must be a non-negative number")
+        }
+        resolvedOffset = Math.floor(definition.offset)
+    }
     return {
-        text: paginated.text,
-        values: paginated.values,
-        limit: paginated.limit,
-        offset: paginated.offset
+        text,
+        values,
+        limit: resolvedLimit,
+        offset: resolvedOffset
+    }
+}
+
+export function compileAggregateCountQuery(definition: AggregateDefinition): {
+    text: string
+    values: unknown[]
+} {
+    const inner = compileAggregateQuery(definition, { paginate: false })
+    return {
+        text: `SELECT COUNT(*) AS total FROM (${inner.text})`,
+        values: inner.values
     }
 }
