@@ -2,24 +2,21 @@ import type {
   ToolContext,
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
-import { dropTable } from "../src/core/table-ddl.ts";
+import { listMigrationsView } from "../src/core/migrate.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
   type: "object",
   properties: {
-    table: {
-      type: "string",
-      description: "Registered table name to drop",
-    },
+    limit: { type: "integer", minimum: 1 },
+    offset: { type: "integer", minimum: 0 },
   },
-  required: ["table"],
 } as const;
 
 export default {
   description:
-    "Drop a structured table and remove its catalog entry. Disabled unless config.allowDropTable is true. Procedure: skill_load { skill: \"vellum-db-meta\" }.",
-  defaultRiskLevel: "high" as const,
+    'List applied schema migrations with limit/offset pagination. Procedure: skill_load { skill: "vellum-db-meta" }.',
+  defaultRiskLevel: "low" as const,
   category: "data",
   input_schema: inputSchema,
   async execute(
@@ -27,7 +24,10 @@ export default {
     _ctx: ToolContext,
   ): Promise<ToolExecutionResult> {
     return runTool(input, inputSchema, (validated) =>
-      dropTable({ table: String(validated.table) }),
+      listMigrationsView({
+        limit: validated.limit as number | undefined,
+        offset: validated.offset as number | undefined,
+      }),
     );
   },
 };

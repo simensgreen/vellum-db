@@ -8,7 +8,6 @@ export function ScopeAccordionList<T extends ScopedItem>({
   getLabel,
   onSelect,
   emptyMessage,
-  resetKey,
 }: {
   items: T[];
   selectedKey: string | null;
@@ -16,7 +15,6 @@ export function ScopeAccordionList<T extends ScopedItem>({
   getLabel: (item: T) => string;
   onSelect: (key: string) => void;
   emptyMessage: string;
-  resetKey?: string | number;
 }) {
   const groups = groupByScope(items, (left, right) =>
     getLabel(left).localeCompare(getLabel(right)),
@@ -39,15 +37,15 @@ export function ScopeAccordionList<T extends ScopedItem>({
   );
 
   useEffect(() => {
-    setExpandedGroups({});
-  }, [resetKey]);
-
-  useEffect(() => {
     if (selectedGroupKey === null) {
-      setExpandedGroups({});
       return;
     }
-    setExpandedGroups({ [selectedGroupKey]: true });
+    setExpandedGroups((current) => {
+      if (current[selectedGroupKey] === true) {
+        return current;
+      }
+      return { ...current, [selectedGroupKey]: true };
+    });
   }, [selectedGroupKey]);
 
   function isGroupOpen(scopeKey: string): boolean {

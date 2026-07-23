@@ -1,6 +1,6 @@
 import { parseRouteQuery } from "../../src/api/parse-request.ts";
 import { DropTableQuerySchema } from "../../src/api/schemas/tables.ts";
-import { dropTable } from "../../src/core/table-ddl.ts";
+import { migrateDropTableApi } from "../../src/core/schema-migrate.ts";
 import { handleRoute } from "../../src/core/route-http.ts";
 
 export const description = "Drop a structured table";
@@ -8,6 +8,6 @@ export const description = "Drop a structured table";
 export async function DELETE(request: Request): Promise<Response> {
   return handleRoute(() => {
     const query = parseRouteQuery(request, DropTableQuerySchema);
-    return dropTable({ table: query.table });
+    return migrateDropTableApi({ table: query.table });
   });
 }

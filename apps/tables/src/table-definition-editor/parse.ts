@@ -36,7 +36,7 @@ export const SCOPE_PATTERN = /^[a-z][a-z0-9_]*$/;
 export function validateScope(scope: string): string | null {
   const trimmed = scope.trim();
   if (!trimmed) {
-    return null;
+    return "Scope is required";
   }
   if (!SCOPE_PATTERN.test(trimmed)) {
     return "Scope must match [a-z][a-z0-9_]*";

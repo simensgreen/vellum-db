@@ -6,6 +6,12 @@ const ajv = new Ajv({
   validateSchema: false,
 });
 
+ajv.addFormat("date-time", {
+  type: "string",
+  validate: (value: string) =>
+    typeof value === "string" && !Number.isNaN(Date.parse(value)),
+});
+
 const validatorCache = new Map<string, ValidateFunction>();
 
 export type JsonSchemaObject = {

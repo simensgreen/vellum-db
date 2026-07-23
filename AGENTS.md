@@ -35,7 +35,7 @@ This repository root **is** the plugin (`package.json` + `hooks/` + `tools/` + `
 | `src/core/` | Domain logic shared by tools and routes |
 | `src/core/sync-tags.ts` | Invalidation tag constants + builders (canonical) |
 | `skills/vellum-db/` | Query/analyze procedures + `references/` |
-| `skills/vellum-db-meta/` | Create/alter/drop procedures |
+| `skills/vellum-db-meta/` | Migration authoring (`db_migrate`, `db_list_migrations`) |
 | `examples/expenses/` | Sample domain skill (expense tracker); **not** indexed by Vellum — copy to workspace `skills/` to activate; JSON schemas in `examples/expenses/schemas/` |
 | `tests/` | Bun tests (`bun test`) |
 
@@ -52,7 +52,7 @@ Data is **workspace-global** (not per-conversation), so there is no `conversatio
 | `maxRowsPerQuery` | Cap for query/aggregate/`db_sql` result rows |
 | `rawSqlMode` | `select-only` — guarded SELECT only; `on` — any single statement; `off` — `db_sql` disabled |
 | `databasePath` | `null`/omit → `pluginStorageDir/vellum-db.sqlite`; relative → under `pluginStorageDir`; absolute → that file |
-| `allowDropTable` | `false` (default) — `db_drop_table` rejects; `true` — allow DROP TABLE + delete `_tables` row |
+| `allowDropTable` | `false` (default) — migration/API `drop` rejects; `true` — allow DROP TABLE + delete `_tables` row |
 | `statsRetentionDays` | Days of `_stats` daily history to keep (UTC epoch days). Default **30** when omitted. |
 
 Meta table **`_stats`** (one row per UTC day): snapshots (`table_count`, `row_count`, `database_bytes`) plus daily op counters (`inserts`, `updates`, `deletions`, `reads`). Updated from `src/core/stats-store.ts` on row ops and DDL. Overview UI reads **`GET /stats`** (`granularity`: `day` \| `week` \| `month`).
@@ -79,12 +79,13 @@ bun run dev:app   # Tables app UI: http://localhost:5173 (temp SQLite + route pr
 - Prefer JSON tools over `db_sql` for routine work.
 - Tool `input_schema` MUST NOT set `additionalProperties: false` at the tool-input root (or anywhere that rejects host-injected fields). Vellum injects `activity` into tool calls; rejecting unknown properties breaks every invocation.
 - List tools that can return many rows use `limit`/`offset` and return `has_more`.
-- Optional table or view `scope` (`[a-z][a-z0-9_]*`) filters `db_list_tables` / `db_list_views`; set on create.
+- Optional table or view `scope` (`[a-z][a-z0-9_]*`) filters `db_list_tables` / `db_list_views`; **required** on create (migration `create[]` / `views[]`, `POST /tables?scope=`, save view query).
 - View query definitions support ref joins (`left`/`inner`/`right`, multi-hop) on `kind: query` and `kind: aggregate`; see `skills/vellum-db/references/view-query-model.md`.
 - `db_load` / `db_dump`: relative `path` under the Vellum workspace; `mode` is `csv` | `json` | `jsonl` | `xlsx`.
 - REST file IO (Database app): `GET /export?table=&mode=` (download); `POST /import?table=&filename=` (raw body; format from filename or `mode` query).
 - REST batch row commit (Database app): `POST /rows/commit?table=` body `{ insert?, update?, delete? }`.
-- Create tables with **TableDefinition DSL** only (`POST /tables`, `db_create_table`). Canonical blob: `_tables.definition_json`; `schema_json` is compiled row validator cache.
+- Schema changes via **flat migration JSON** (`db_migrate { path }`) or REST (`POST /migrate`, `GET /migrations`). Each REST DDL/view mutation records a migration in `_migrations`. Skill convention: `migrate.up.json` + `migrate.down.json`. See `skills/vellum-db-meta/references/migration-format.md`.
+- Create tables with **TableDefinition DSL** in migration `create[]` or `POST /tables`. Canonical blob: `_tables.definition_json`; `schema_json` is compiled row validator cache.
 - Table `primaryKey` on columns replaces table-level `pk` and implicit `id`: set `primaryKey: true` on one or more columns (e.g. `nanoid` + `default: "random"`).
 - `db_insert` / `db_load` support `on_conflict`: `abort` | `ignore` | `replace` — conflict on primary key columns only.
 - **Core** owns mutation invalidation via `src/core/sync.ts` + `src/core/sync-tags.ts` (not routes, not tools).

@@ -1,10 +1,39 @@
 # TableDefinition DSL examples for vellum-db
 
-Reference patterns for `db_create_table` and `db_alter_table`. All tables use the **TableDefinition DSL** — no JSON Schema create path, no implicit `id`.
+Reference patterns for TableDefinition entries in migration `create[]` / `alter[]`. All tables use the **TableDefinition DSL** — no JSON Schema create path, no implicit `id`.
+
+Each `create[]` entry must include **`scope`** (separate from `definition`; not inside the TableDefinition object).
 
 Primary key is declared per column with `"primaryKey": true` (composite keys: mark multiple columns).
 
 ## Minimal table with nanoid primary key
+
+Migration `create[]` entry:
+
+```json
+{
+  "scope": "demo",
+  "definition": {
+    "slug": "tasks",
+    "name": "Tasks",
+    "columns": [
+      {
+        "name": "Task ID",
+        "slug": "task_id",
+        "primaryKey": true,
+        "data": { "type": "nanoid", "default": "random" }
+      },
+      {
+        "name": "Title",
+        "slug": "title",
+        "data": { "type": "str", "minLen": 1 }
+      }
+    ]
+  }
+}
+```
+
+TableDefinition only (inside `definition`):
 
 ```json
 {

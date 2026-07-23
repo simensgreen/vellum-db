@@ -64,4 +64,4 @@ Compute metrics (`count`, `sum`, `avg`, `min`, `max`) with optional `group_by`, 
 }
 ```
 
-Filter JSON shapes match `db_query` (plain equality, operators, `and`/`or`). Joined aggregates: `metrics[].column` must stay on the base table; `group_by` / `filter` may use join aliases. See [view-query-model.md](view-query-model.md). Prefer saving repeated aggregates with `db_save_view`.
+Filter JSON shapes match `db_query` (plain equality, operators, `and`/`or`). Joined aggregates: `metrics[].column` must stay on the base table; `group_by` / `filter` may use join aliases. See [view-query-model.md](view-query-model.md). Repeated aggregates belong in domain migration `views[]`.

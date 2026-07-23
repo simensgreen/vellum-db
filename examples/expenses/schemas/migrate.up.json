@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "create": [
+    {
+      "scope": "expenses",
+      "definition": {
+        "slug": "category",
+        "name": "Expense categories",
+        "columns": [
+          {
+            "name": "Category ID",
+            "slug": "category_id",
+            "primaryKey": true,
+            "data": { "type": "nanoid", "default": "random" }
+          },
+          {
+            "name": "Name",
+            "slug": "name",
+            "data": { "type": "str", "minLen": 1 }
+          },
+          {
+            "name": "Description",
+            "slug": "description",
+            "data": { "type": "str", "minLen": 1 }
+          }
+        ]
+      }
+    },
+    {
+      "scope": "expenses",
+      "definition": {
+        "slug": "expenses",
+        "name": "Expenses",
+        "columns": [
+          {
+            "name": "Expense ID",
+            "slug": "expense_id",
+            "primaryKey": true,
+            "data": { "type": "nanoid", "default": "random" }
+          },
+          {
+            "name": "Amount",
+            "slug": "amount",
+            "data": { "type": "float", "min": 0 }
+          },
+          {
+            "name": "Currency",
+            "slug": "currency",
+            "data": {
+              "type": "enum",
+              "variants": [
+                "USD", "EUR", "GBP", "JPY", "CNY", "CHF", "CAD", "AUD",
+                "RUB", "INR", "BRL", "KRW", "MXN", "TRY", "PLN", "SEK",
+                "NOK", "DKK", "SGD", "HKD", "NZD", "ZAR", "CZK", "HUF",
+                "ILS", "AED", "THB", "IDR", "MYR", "PHP"
+              ],
+              "default": 0
+            }
+          },
+          {
+            "name": "Category",
+            "slug": "category_id",
+            "data": {
+              "type": "ref",
+              "table": "category",
+              "column": "category_id",
+              "onDelete": "restrict"
+            }
+          },
+          {
+            "name": "Description",
+            "slug": "description",
+            "data": { "type": "str", "minLen": 1 }
+          },
+          {
+            "name": "Spent at",
+            "slug": "spent_at",
+            "data": { "type": "timestamp", "default": "now" }
+          },
+          {
+            "name": "Notes",
+            "slug": "notes",
+            "nullable": true,
+            "data": { "type": "str" }
+          }
+        ]
+      }
+    }
+  ],
+  "seed": [
+    {
+      "table": "category",
+      "on_conflict": "ignore",
+      "rows": [
+        { "name": "Food & dining", "description": "Restaurants, cafes, delivery" },
+        { "name": "Groceries", "description": "Supermarket and market food" },
+        { "name": "Transport", "description": "Public transit, taxi, rideshare" },
+        { "name": "Fuel", "description": "Gas and charging" },
+        { "name": "Housing", "description": "Rent and mortgage" },
+        { "name": "Utilities", "description": "Electricity, water, gas bills" },
+        { "name": "Internet & phone", "description": "Mobile and broadband" },
+        { "name": "Healthcare", "description": "Doctor, clinic, medical" },
+        { "name": "Pharmacy", "description": "Prescriptions and OTC" },
+        { "name": "Entertainment", "description": "Movies, games, events" },
+        { "name": "Shopping", "description": "General retail" },
+        { "name": "Clothing", "description": "Apparel and shoes" },
+        { "name": "Travel", "description": "Flights, trains, trips" },
+        { "name": "Lodging", "description": "Hotels and accommodation" },
+        { "name": "Education", "description": "Courses, books, tuition" },
+        { "name": "Subscriptions", "description": "Streaming, SaaS, memberships" },
+        { "name": "Insurance", "description": "Policies and premiums" },
+        { "name": "Personal care", "description": "Haircut, cosmetics" },
+        { "name": "Fitness", "description": "Gym and sports" },
+        { "name": "Gifts & donations", "description": "Presents and charity" },
+        { "name": "Pets", "description": "Vet, food, supplies" },
+        { "name": "Childcare", "description": "Daycare and babysitting" },
+        { "name": "Business", "description": "Work-related expenses" },
+        { "name": "Taxes & fees", "description": "Government and bank fees" },
+        { "name": "Home maintenance", "description": "Repairs and supplies" },
+        { "name": "Other", "description": "Uncategorized spending" }
+      ]
+    }
+  ],
+  "views": [
+    {
+      "slug": "expenses_with_category",
+      "name": "Expenses with category",
+      "kind": "query",
+      "scope": "expenses",
+      "description": "Expense rows joined to category, filtered by spent_at range",
+      "definition": {
+        "table": "expenses",
+        "joins": [
+          {
+            "ref": "category_id",
+            "type": "inner",
+            "select": {
+              "name": "category_name",
+              "description": "category_description"
+            }
+          }
+        ],
+        "filter": {
+          "and": [
+            { "spent_at": { "gte": "$from" } },
+            { "spent_at": { "lte": "$to" } }
+          ]
+        },
+        "columns": [
+          "expense_id",
+          "amount",
+          "currency",
+          "description",
+          "spent_at",
+          "notes",
+          "category_name",
+          "category_description"
+        ],
+        "order": [{ "column": "spent_at", "direction": "desc" }]
+      }
+    },
+    {
+      "slug": "spending_by_category",
+      "name": "Spending by category",
+      "kind": "aggregate",
+      "scope": "expenses",
+      "description": "Total amount and count per category for a date range",
+      "definition": {
+        "table": "expenses",
+        "joins": [
+          {
+            "ref": "category_id",
+            "type": "inner",
+            "select": { "name": "category_name" }
+          }
+        ],
+        "metrics": [
+          { "fn": "sum", "column": "amount", "as": "total_amount" },
+          { "fn": "count", "as": "expense_count" }
+        ],
+        "group_by": ["category_name"],
+        "filter": {
+          "and": [
+            { "spent_at": { "gte": "$from" } },
+            { "spent_at": { "lte": "$to" } }
+          ]
+        },
+        "order": [{ "column": "total_amount", "direction": "desc" }]
+      }
+    }
+  ]
+}

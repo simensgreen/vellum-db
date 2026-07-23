@@ -19,7 +19,7 @@ export const SaveViewQuerySchema = z.object({
   name: requiredQueryString("name"),
   kind: ViewKindSchema,
   description: z.string().optional(),
-  scope: ScopeSchema.optional(),
+  scope: ScopeSchema,
 });
 
 export const SaveViewBodySchema = RowRecordSchema;

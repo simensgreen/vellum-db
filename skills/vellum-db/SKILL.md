@@ -33,12 +33,12 @@ Load with `skill_load` and `{ "skill": "vellum-db" }`. Prefer JSON tools over SQ
 - Filter, sort, and page rows with `db_query`.
 - Compute metrics with `db_aggregate` (count, sum, avg, min, max; optional `group_by`, `having`).
 - Insert, update, or delete rows when preparing or cleaning data for analysis.
-- Save repeated analysis as named views with `$param` placeholders.
+- Save repeated analysis as named views with `$param` placeholders (views are created in migration files via **`vellum-db-meta`**).
 - Run `db_sql` only when JSON tools cannot express the need.
 
 ## Do not use for
 
-- **Create, alter, or drop tables** — load **`vellum-db-meta`** instead (`db_create_table`, `db_alter_table`, `db_drop_table`).
+- **Create, alter, or drop tables / views** — load **`vellum-db-meta`** and apply migration files (`db_migrate`).
 - One-off math with no table access.
 - Unstructured notes or chat memory outside vellum-db tables.
 
@@ -51,8 +51,8 @@ The vellum-db plugin stores agent data in **TableDefinition** tables (column slu
 1. **Discover** — call `db_list_tables` (optional `scope`, `name_prefix`, `limit`, `offset`). Read `name`, `scope`, `definition`, and `columns` (slugs) before querying. Details: [references/db_list_tables.md](references/db_list_tables.md).
 2. **Choose read tool** — `db_query` for row-level reads; `db_aggregate` for metrics and `group_by`. Both support `limit`/`offset` and return `has_more`. Details: [references/db_query.md](references/db_query.md), [references/db_aggregate.md](references/db_aggregate.md).
 3. **Prepare data if needed** — `db_insert` to add rows; `db_update` / `db_delete` with a **non-empty** JSON `filter`. Details: [references/db_insert.md](references/db_insert.md), [references/db_update.md](references/db_update.md), [references/db_delete.md](references/db_delete.md).
-4. **Repeat analysis** — `db_save_view` once, then `db_run_view` with `params`. Details: [references/db_save_view.md](references/db_save_view.md), [references/db_run_view.md](references/db_run_view.md).
-5. **List or retire views** — [references/db_list_views.md](references/db_list_views.md), [references/db_delete_view.md](references/db_delete_view.md).
+4. **Repeat analysis** — run saved views with `db_run_view` and `params`. Views are defined in domain `migrate.up.json` files (see **`vellum-db-meta`**). Details: [references/db_run_view.md](references/db_run_view.md).
+5. **List views** — [references/db_list_views.md](references/db_list_views.md).
 6. **Import / export** — [references/db_load.md](references/db_load.md), [references/db_dump.md](references/db_dump.md). Relative `path` is under the Vellum workspace.
 7. **Raw SQL last** — [references/db_sql.md](references/db_sql.md). Single statement only. Prefer saved JSON views for anything you will run again.
 
@@ -66,23 +66,19 @@ The vellum-db plugin stores agent data in **TableDefinition** tables (column slu
 | Add a row | `db_insert` | [references/db_insert.md](references/db_insert.md) |
 | Patch matched rows | `db_update` | [references/db_update.md](references/db_update.md) |
 | Remove matched rows | `db_delete` | [references/db_delete.md](references/db_delete.md) |
-| Persist a view | `db_save_view` | [references/db_save_view.md](references/db_save_view.md) |
-| Run a view | `db_run_view` | [references/db_run_view.md](references/db_run_view.md) |
+| Run a saved view | `db_run_view` | [references/db_run_view.md](references/db_run_view.md) |
 | Inspect views | `db_list_views` | [references/db_list_views.md](references/db_list_views.md) |
-| Remove a view | `db_delete_view` | [references/db_delete_view.md](references/db_delete_view.md) |
 | Import rows from a file | `db_load` | [references/db_load.md](references/db_load.md) |
 | Export all rows to a file | `db_dump` | [references/db_dump.md](references/db_dump.md) |
 | Escape hatch | `db_sql` | [references/db_sql.md](references/db_sql.md) |
 
 ## Views
 
-**Why save:** repeated dashboards, parameterized reports, and stable names agents can reuse without re-sending full filter JSON.
-
-**How to save:** `db_save_view` with stable `slug` + `name`, optional `scope`, `kind` (`query` or `aggregate`), and `definition`. Join/filter/limit matrix: [references/view-query-model.md](references/view-query-model.md). See [references/db_save_view.md](references/db_save_view.md).
+**Why save:** repeated dashboards, parameterized reports, and stable names agents can reuse without re-sending full filter JSON. Views are authored in domain **`migrate.up.json`** files and applied with **`db_migrate`** (see **`vellum-db-meta`**).
 
 **Parameters:** string placeholders like `"$status"` inside the definition; bind with `params` on `db_run_view`. See [references/db_run_view.md](references/db_run_view.md).
 
-**Manage:** [references/db_list_views.md](references/db_list_views.md), [references/db_delete_view.md](references/db_delete_view.md).
+**Manage:** [references/db_list_views.md](references/db_list_views.md). Schema changes to views go through migration files.
 
 ## Filters (JSON, not SQL)
 
@@ -118,33 +114,18 @@ Call `db_query` with the JSON above. Expect `{ "table", "count", "limit", "offse
 
 ### Example 2
 
-**Input (user):** "Save a query for tasks by status and run it for done items."
+**Input (user):** "Run the saved tasks-by-status view for done items."
 
-**Output (tool calls):**
-
-1. `db_save_view` — see [references/db_save_view.md](references/db_save_view.md):
+**Output (tool call):**
 
 ```json
 {
-  "name": "tasks_by_status",
-  "kind": "query",
-  "description": "Tasks filtered by status parameter",
-  "definition": {
-    "table": "tasks",
-    "filter": { "status": "$status" },
-    "order": [{ "column": "points", "direction": "desc" }]
-  }
-}
-```
-
-2. `db_run_view` — see [references/db_run_view.md](references/db_run_view.md):
-
-```json
-{
-  "name": "tasks_by_status",
+  "slug": "tasks_by_status",
   "params": { "status": "done" }
 }
 ```
+
+(View must exist from a prior domain migration.)
 
 ## Common pitfalls
 
@@ -153,7 +134,7 @@ Call `db_query` with the JSON above. Expect `{ "table", "count", "limit", "offse
 - Using SQL strings in `db_query` / `db_aggregate` — pass JSON filters only.
 - Empty `filter` on `db_update` or `db_delete` — rejected to prevent wiping a whole table.
 - Forgetting `params` on `db_run_view` — `"$name"` placeholders stay literal and fail.
-- Re-sending the full query JSON on every run — save with `db_save_view` instead.
+- Re-sending the full query JSON on every run — use saved views from domain migrations instead.
 - Calling `db_sql` for routine reads — prefer JSON tools; raw SQL is high risk and mode-gated.
 - Table DDL (create/alter/drop) — out of scope; load **`vellum-db-meta`**.
 
@@ -161,8 +142,8 @@ Call `db_query` with the JSON above. Expect `{ "table", "count", "limit", "offse
 
 - [ ] Called `db_list_tables` when schema or table names were unknown.
 - [ ] Used `db_query` or `db_aggregate` (not `db_sql`) for routine reads.
-- [ ] Repeated analysis saved with `db_save_view` and run via `db_run_view`.
+- [ ] Repeated analysis uses `db_run_view` on views from domain migrations.
 - [ ] Every `$placeholder` in a view definition has a matching `params` key at run time.
 - [ ] `db_update` / `db_delete` filters are non-empty objects.
 - [ ] `db_sql` used only when JSON tools cannot express the need, and only if `rawSqlMode` is not `off`.
-- [ ] DDL requests deferred to **`vellum-db-meta`**, not handled here.
+- [ ] DDL / view authoring deferred to **`vellum-db-meta`** (`db_migrate`), not handled here.

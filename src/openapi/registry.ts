@@ -21,6 +21,10 @@ import {
   UpdateRowsQuerySchema,
 } from "../api/schemas/rows.ts";
 import {
+  ApplyMigrationBodySchema,
+  ListMigrationsQuerySchema,
+} from "../api/schemas/migrate.ts";
+import {
   AlterTableBodySchema,
   AlterTableQuerySchema,
   CreateTableScopeQuerySchema,
@@ -340,6 +344,49 @@ export function createOpenApiRegistry(): OpenAPIRegistry {
     responses: successResponses,
   });
 
+  registry.registerPath({
+    method: "get",
+    path: "/migrations",
+    operationId: "listMigrations",
+    summary: "List applied schema migrations",
+    tags: ["migrations"],
+    request: { query: ListMigrationsQuerySchema },
+    responses: {
+      200: {
+        description: "Paginated migration history",
+        content: {
+          "application/json": {
+            schema: responseSchemas.PaginatedMetaSchema.extend({
+              migrations: z.array(
+                z.object({
+                  id: z.number().int().positive(),
+                  hash: z.string(),
+                  name: z.string(),
+                  applied_at: z.string(),
+                }),
+              ),
+            }),
+          },
+        },
+      },
+      ...errorResponses,
+    },
+  });
+
+  registry.registerPath({
+    method: "post",
+    path: "/migrate",
+    operationId: "applyMigration",
+    summary: "Apply a flat migration file or inspect a recorded migration",
+    tags: ["migrations"],
+    request: {
+      body: {
+        content: { "application/json": { schema: ApplyMigrationBodySchema } },
+      },
+    },
+    responses: successResponses,
+  });
+
   return registry;
 }
 
@@ -359,4 +406,6 @@ export const registeredRoutePaths = [
   "/import",
   "/sql",
   "/stats",
+  "/migrations",
+  "/migrate",
 ] as const;

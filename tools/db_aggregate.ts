@@ -76,7 +76,7 @@ export { executeAggregateDefinition };
 
 export default {
   description:
-    "Aggregate rows with JSON metrics (count/sum/avg/min/max), optional joins/group_by/filter/having/order/limit/offset (has_more). Prefer db_save_view for repeats. Procedure: skill_load { skill: \"vellum-db\" }.",
+    "Prefer db_run_view for repeats. Procedure: skill_load { skill: \"vellum-db\" }.",
   defaultRiskLevel: "low" as const,
   category: "data",
   input_schema: inputSchema,

@@ -4,7 +4,7 @@ import { asBindings } from "../bindings.ts";
 import { assertSafeIdentifier } from "../identifiers.ts";
 import { pageFromRows, resolvePage } from "../pagination.ts";
 import { validateAgainstSchema } from "../schema-validate.ts";
-import { normalizeScope } from "./catalog.ts";
+import { normalizeScope, requireScope } from "./catalog.ts";
 import type {
   AggregateDefinition,
   QueryDefinition,
@@ -189,9 +189,7 @@ export function saveView(input: {
   assertViewDefinition(input.kind, input.definition);
   const definitionJson = JSON.stringify(input.definition);
   const description = input.description ?? null;
-  const scope = Object.prototype.hasOwnProperty.call(input, "scope")
-    ? normalizeScope(input.scope)
-    : null;
+  const scopeProvided = Object.prototype.hasOwnProperty.call(input, "scope");
   const timestamp = nowIso();
   const database = getDatabase();
   const existing = database
@@ -199,6 +197,7 @@ export function saveView(input: {
     .get(slug);
 
   if (existing) {
+    const scope = scopeProvided ? normalizeScope(input.scope) : existing.scope;
     database
       .query(
         "UPDATE _views SET name = ?, kind = ?, definition_json = ?, description = ?, scope = ?, updated_at = ? WHERE slug = ?",
@@ -223,6 +222,10 @@ export function saveView(input: {
       updated_at: timestamp,
     };
   }
+
+  const scope = requireScope(scopeProvided ? input.scope : undefined, {
+    entity: "view",
+  });
 
   database
     .query(

@@ -9,6 +9,7 @@ import {
   parseConfig,
 } from "../src/db.ts";
 import { tasksDefinition } from "./fixtures/table-definitions.ts";
+import { TEST_TABLE_SCOPE } from "./fixtures/test-scope.ts";
 import { GET as listTables } from "../routes/tables.ts";
 import { GET as queryRows } from "../routes/rows.ts";
 import { DELETE as dropTableRoute } from "../routes/tables/drop.ts";
@@ -46,7 +47,7 @@ describe("routes", () => {
     const dir = withTempDb();
     try {
       const createResponse = await createTableRoute(
-        new Request("http://local/tables", {
+        new Request("http://local/tables?scope=demo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(tasksDefinition),
@@ -72,6 +73,22 @@ describe("routes", () => {
       };
       expect(rowsBody.table).toBe("tasks");
       expect(rowsBody.rows).toEqual([]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("POST /tables requires scope query param", async () => {
+    const dir = withTempDb();
+    try {
+      const response = await createTableRoute(
+        new Request("http://local/tables", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(tasksDefinition),
+        }),
+      );
+      expect(response.status).toBe(400);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

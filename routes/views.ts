@@ -8,7 +8,8 @@ import {
   SaveViewBodySchema,
   SaveViewQuerySchema,
 } from "../src/api/schemas/views.ts";
-import { listViewsView, saveViewApi } from "../src/core/views-api.ts";
+import { migrateSaveViewApi } from "../src/core/schema-migrate.ts";
+import { listViewsView } from "../src/core/views-api.ts";
 import { handleRoute } from "../src/core/route-http.ts";
 
 export const description = "List or save named views";
@@ -34,7 +35,7 @@ export async function POST(request: Request): Promise<Response> {
       query: SaveViewQuerySchema,
       body: SaveViewBodySchema,
     });
-    return saveViewApi({
+    return migrateSaveViewApi({
       slug: query.slug,
       name: query.name,
       kind: query.kind,

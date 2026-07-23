@@ -7,7 +7,7 @@ import {
   AlterTableBodySchema,
   AlterTableQuerySchema,
 } from "../../src/api/schemas/tables.ts";
-import { alterTable } from "../../src/core/table-ddl.ts";
+import { migrateAlterTableApi } from "../../src/core/schema-migrate.ts";
 import type { TableDefinition } from "../../src/core/table/types.ts";
 import { handleRoute } from "../../src/core/route-http.ts";
 
@@ -39,6 +39,6 @@ export async function POST(request: Request): Promise<Response> {
     if (params.has("scope")) {
       alterInput.scope = parseScopeFromParams(params) ?? null;
     }
-    return alterTable(alterInput);
+    return migrateAlterTableApi(alterInput);
   });
 }

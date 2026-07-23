@@ -40,6 +40,7 @@ export function buildOpenApiDocument() {
       { name: "aggregate", description: "Aggregations" },
       { name: "views", description: "Named query and aggregate views" },
       { name: "io", description: "Import and export" },
+      { name: "migrations", description: "Schema migration history and apply" },
       { name: "sql", description: "Raw SQL escape hatch" },
     ],
   });

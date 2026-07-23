@@ -189,7 +189,7 @@ export function CreateTableForm({
     try {
       await createTable({
         definition: validated.definition,
-        scope: visual.scope.trim() || validated.definition.scope || undefined,
+        scope: visual.scope.trim(),
       });
       onCreated(validated.definition.slug);
     } catch (submitError) {
@@ -251,7 +251,7 @@ export function CreateTableForm({
         </label>
 
         <label class="form-field">
-          <FormFieldLabel>Scope</FormFieldLabel>
+          <FormFieldLabel required>Scope</FormFieldLabel>
           <input
             type="text"
             value={visual.scope}

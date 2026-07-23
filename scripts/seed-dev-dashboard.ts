@@ -293,7 +293,7 @@ function seedHistoricalStats(today: number, target: StatsSnapshot): void {
 
 function seedTypeShowcaseIfEmpty(): void {
   if (!getTable("type_showcase")) {
-    createUserTable(typeShowcaseDefinition);
+    createUserTable(typeShowcaseDefinition, { scope: "demo" });
   }
   if (tableRowCount("type_showcase") > 0) {
     return;
@@ -607,6 +607,7 @@ function seedSampleViews(): void {
       slug: "recent_events",
       name: "Recent events",
       kind: "query",
+      scope: "analytics",
       description: "Latest events (no params)",
       definition: {
         table: "events",
@@ -622,7 +623,7 @@ function seedSampleTables(): void {
     createUserTable(eventsDefinition, { scope: "analytics" });
   }
   if (!getTable("notes")) {
-    createUserTable(notesDefinition);
+    createUserTable(notesDefinition, { scope: "analytics" });
   }
 
   if (tableRowCount("events") === 0) {

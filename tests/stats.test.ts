@@ -74,7 +74,7 @@ describe("stats store", () => {
     const dir = withTempDb();
     try {
       const createResponse = await createTableRoute(
-        new Request("http://local/tables", {
+        new Request("http://local/tables?scope=demo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(tasksDefinition),
@@ -133,7 +133,7 @@ describe("getDatabaseStats", () => {
     const dir = withTempDb();
     try {
       await createTableRoute(
-        new Request("http://local/tables", {
+        new Request("http://local/tables?scope=demo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(tasksDefinition),
@@ -199,7 +199,7 @@ describe("measureLiveSnapshot", () => {
     const dir = withTempDb();
     try {
       await createTableRoute(
-        new Request("http://local/tables", {
+        new Request("http://local/tables?scope=demo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(tasksDefinition),

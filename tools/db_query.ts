@@ -76,7 +76,7 @@ export { executeQueryDefinition };
 
 export default {
   description:
-    "Query rows with a JSON filter (not SQL). Supports joins, limit/offset pagination (has_more). Prefer db_save_view for repeats. Procedure: skill_load { skill: \"vellum-db\" }.",
+    "Query rows with a JSON filter (not SQL). Supports joins, limit/offset pagination (has_more). Prefer db_run_view for repeats. Procedure: skill_load { skill: \"vellum-db\" }.",
   defaultRiskLevel: "low" as const,
   category: "data",
   input_schema: inputSchema,

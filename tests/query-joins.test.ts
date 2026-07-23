@@ -11,6 +11,7 @@ import { saveView } from "../src/core/views.ts";
 import type { TableDefinition } from "../src/core/table/types.ts";
 import { insertTableRow } from "../src/core/insert.ts";
 import { listTables } from "../src/core/catalog.ts";
+import { TEST_TABLE_SCOPE } from "./fixtures/test-scope.ts";
 
 const regionsDefinition: TableDefinition = {
   slug: "regions",
@@ -97,9 +98,9 @@ function seedWorkGraph(): {
   orphanProjectId: string;
   linkedProjectId: string;
 } {
-  createUserTable(regionsDefinition);
-  createUserTable(projectsDefinition);
-  createUserTable(tasksDefinition);
+  createUserTable(regionsDefinition, { scope: TEST_TABLE_SCOPE });
+  createUserTable(projectsDefinition, { scope: TEST_TABLE_SCOPE });
+  createUserTable(tasksDefinition, { scope: TEST_TABLE_SCOPE });
 
   const regionsTable = listTables().tables.find((table) => table.name === "regions")!;
   const projectsTable = listTables().tables.find((table) => table.name === "projects")!;
@@ -300,6 +301,7 @@ describe("aggregate joins", () => {
         slug: "points_by_project",
         name: "Points by project",
         kind: "aggregate",
+        scope: TEST_TABLE_SCOPE,
         definition: {
           table: "tasks",
           joins: [{ ref: "project_ref", select: { name: "project_name" } }],

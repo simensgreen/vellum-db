@@ -38,4 +38,4 @@ Missing params leave the literal `"$name"` string and usually fail validation.
 }
 ```
 
-Save definitions with `db_save_view`.
+Views are defined in domain migration files (`vellum-db-meta`).

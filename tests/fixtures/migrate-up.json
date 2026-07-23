@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "create": [
+    {
+      "scope": "migrate_test",
+      "definition": {
+        "slug": "migrate_items",
+        "name": "Migrate items",
+        "columns": [
+          {
+            "name": "Item ID",
+            "slug": "item_id",
+            "primaryKey": true,
+            "data": { "type": "nanoid", "default": "random" }
+          },
+          {
+            "name": "Label",
+            "slug": "label",
+            "data": { "type": "str", "minLen": 1 }
+          }
+        ]
+      }
+    }
+  ],
+  "seed": [
+    {
+      "table": "migrate_items",
+      "on_conflict": "ignore",
+      "rows": [{ "label": "alpha" }, { "label": "beta" }]
+    }
+  ]
+}

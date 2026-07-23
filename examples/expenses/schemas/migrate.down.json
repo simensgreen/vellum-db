@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "delete_views": ["expenses_with_category", "spending_by_category"],
+  "drop": ["expenses", "category"]
+}

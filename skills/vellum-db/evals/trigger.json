@@ -15,7 +15,7 @@
     "id": "view-run-should-trigger",
     "should_trigger": true,
     "target_skill": "vellum-db",
-    "query": "Save a named view for tasks by status and run it with status=done."
+    "query": "Run the spending_by_category view for July with from and to params."
   },
   {
     "id": "list-tables-filter-should-trigger",

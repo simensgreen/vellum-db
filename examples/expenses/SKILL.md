@@ -49,11 +49,7 @@ Complete steps in order. Do not skip bootstrap when tables are missing.
 
 1. Load this skill. For first-time host setup, follow [references/install.md](references/install.md).
 2. Call `db_list_tables` with `scope: "expenses"`. If `category` or `expenses` is missing, load **`vellum-db-meta`** and bootstrap (step 3). Otherwise load **`vellum-db`** for row operations.
-3. **Bootstrap** when tables or views are missing (JSON in [schemas/](schemas/) — guide in [references/schema.md](references/schema.md)):
-   - Create table `category` (`db_create_table`).
-   - Seed default categories (`db_insert` per row).
-   - Create table `expenses` (`db_create_table`).
-   - Save views `expenses_with_category` and `spending_by_category` (`db_save_view` ×2).
+3. **Bootstrap** when tables or views are missing — apply [schemas/migrate.up.json](schemas/migrate.up.json) via `db_migrate` (see [references/migrations.md](references/migrations.md)). Workspace path when installed at `skills/expenses/`: `skills/expenses/schemas/migrate.up.json`.
    - Load **`vellum-db`** after bootstrap for inserts and queries.
 4. **Record an expense** — resolve category, then insert:
    - `db_query` on `category` with filter `{ "name": "<category name>" }`.
@@ -67,7 +63,7 @@ Advanced scenarios: [references/usage.md](references/usage.md).
 
 | Goal | Tool | When |
 | --- | --- | --- |
-| First-time DDL | `db_create_table` | Bootstrap only; load **vellum-db-meta** |
+| First-time schema | `db_migrate` | Bootstrap; load **vellum-db-meta** |
 | Resolve category | `db_query` on `category` | Before every insert |
 | Log expense | `db_insert` | After category lookup |
 | List with category info | `db_run_view` | Prefer saved view over ad-hoc join |

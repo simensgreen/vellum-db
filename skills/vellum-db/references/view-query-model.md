@@ -1,6 +1,6 @@
 # View query model
 
-Reference for JSON query and aggregate definitions saved as views (`db_save_view`) and run via `db_run_view`.
+Reference for JSON query and aggregate definitions in saved views (authored in migration files, run via `db_run_view`).
 
 ## Query vs aggregate
 
@@ -99,7 +99,7 @@ Fresh dev DB required after seed schema changes (`regions`, `projects.region_ref
 | --- | --- |
 | Ad-hoc query | `db_query` |
 | Ad-hoc aggregate | `db_aggregate` |
-| Save | `db_save_view` |
+| Author | Domain `migrate.up.json` (`db_migrate`) |
 | Run | `db_run_view` |
 
 Definition shapes match `db_query` / `db_aggregate` tool input.

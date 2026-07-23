@@ -91,27 +91,29 @@ export function DatabaseSidebar({
       {listError ? (
         <div class="app-message app-message--error">{listError}</div>
       ) : null}
-      {!listLoading && sidebarTab === "tables" ? (
-        <ScopeAccordionList
-          resetKey={sidebarTab}
-          items={tables}
-          selectedKey={selectedTable}
-          getKey={(table) => table.name}
-          getLabel={(table) => table.definition.name}
-          onSelect={onSelectTable}
-          emptyMessage="No tables yet."
-        />
-      ) : null}
-      {!listLoading && sidebarTab === "views" ? (
-        <ScopeAccordionList
-          resetKey={sidebarTab}
-          items={views}
-          selectedKey={selectedView}
-          getKey={(view) => view.slug}
-          getLabel={(view) => view.name}
-          onSelect={onSelectView}
-          emptyMessage="No views yet."
-        />
+      {!listLoading && !listError ? (
+        <>
+          <div hidden={sidebarTab !== "tables"}>
+            <ScopeAccordionList
+              items={tables}
+              selectedKey={selectedTable}
+              getKey={(table) => table.name}
+              getLabel={(table) => table.definition.name}
+              onSelect={onSelectTable}
+              emptyMessage="No tables yet."
+            />
+          </div>
+          <div hidden={sidebarTab !== "views"}>
+            <ScopeAccordionList
+              items={views}
+              selectedKey={selectedView}
+              getKey={(view) => view.slug}
+              getLabel={(view) => view.name}
+              onSelect={onSelectView}
+              emptyMessage="No views yet."
+            />
+          </div>
+        </>
       ) : null}
     </aside>
   );

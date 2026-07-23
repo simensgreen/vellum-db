@@ -1,12 +1,14 @@
 import { buildKnownTablesMap } from "../src/core/catalog.ts";
 import { listTablesView } from "../src/core/list-tables.ts";
-import { createTable } from "../src/core/table-ddl.ts";
+import { migrateCreateTableApi } from "../src/core/schema-migrate.ts";
 import { assertTableDefinition } from "../src/core/table/index.ts";
 import { parseRouteQuery } from "../src/api/parse-request.ts";
-import { ListTablesQuerySchema } from "../src/api/schemas/tables.ts";
+import {
+  CreateTableScopeQuerySchema,
+  ListTablesQuerySchema,
+} from "../src/api/schemas/tables.ts";
 import {
   handleRoute,
-  optionalScopeParam,
   parseJsonBody,
 } from "../src/core/route-http.ts";
 
@@ -29,14 +31,13 @@ export async function GET(request: Request): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   return handleRoute(async () => {
-    const url = new URL(request.url);
-    const scope = optionalScopeParam(url.searchParams);
+    const query = parseRouteQuery(request, CreateTableScopeQuerySchema);
     const body = await parseJsonBody(request);
     const knownTables = buildKnownTablesMap();
     const definition = assertTableDefinition(body, { knownTables });
-    return createTable({
+    return migrateCreateTableApi({
       definition,
-      ...(scope !== undefined ? { scope } : {}),
+      scope: query.scope,
     });
   });
 }

@@ -30,11 +30,11 @@ If the shape fits “rows in tables + filters + rollups,” a skill on top of th
 
 ## How it works (agent view)
 
-1. **Define tables** — **TableDefinition DSL** → SQLite columns (`db_create_table`). Optional `scope` to group related tables. See **`vellum-db-meta`**.
+1. **Define schema** — flat migration files (`db_migrate`) or Database app REST. **`scope` is required** when creating tables/views; omit `scope` on list calls to see all. See **`vellum-db-meta`**.
 2. **Write and change rows** — `db_insert`, `db_update`, `db_delete` with JSON filters (column slugs).
 3. **Read and analyze** — `db_query` (filter / order / page) and `db_aggregate` (count, sum, avg, min, max, group by).
-4. **Reuse analysis** — `db_save_view` / `db_run_view` with `$param` placeholders.
-5. **Discover** — `db_list_tables` and `db_list_views` with filters and pagination.
+4. **Reuse analysis** — `db_run_view` with `$param` placeholders (views defined in domain migrations).
+5. **Discover** — `db_list_tables`, `db_list_views`, `db_list_migrations`.
 6. **Import / export** — `db_load` / `db_dump` (`csv`, `json`, `jsonl`, `xlsx`).
 
 Built-in skills:
@@ -42,7 +42,7 @@ Built-in skills:
 | Skill | Load | Role |
 | --- | --- | --- |
 | `vellum-db` | `skill_load { "skill": "vellum-db" }` | Query, aggregate, row ops, views, optional SQL escape hatch |
-| `vellum-db-meta` | `skill_load { "skill": "vellum-db-meta" }` | Create / alter / drop tables |
+| `vellum-db-meta` | `skill_load { "skill": "vellum-db-meta" }` | Author and apply schema migrations |
 
 Domain skills should depend on these: spell out table names, schemas, and procedures; call the shared `db_*` tools.
 

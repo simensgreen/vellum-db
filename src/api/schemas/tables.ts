@@ -31,5 +31,5 @@ export const DropTableQuerySchema = z.object({
 });
 
 export const CreateTableScopeQuerySchema = z.object({
-  scope: ScopeSchema.optional(),
+  scope: ScopeSchema,
 });

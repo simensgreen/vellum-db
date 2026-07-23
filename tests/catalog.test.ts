@@ -40,6 +40,7 @@ import {
   scratchDefinition,
   tasksDefinition,
 } from "./fixtures/table-definitions.ts";
+import { TEST_TABLE_SCOPE } from "./fixtures/test-scope.ts";
 
 function withTempDb(): string {
   const dir = mkdtempSync(join(tmpdir(), "vellum-db-"));
@@ -56,7 +57,7 @@ describe("vellum-db core", () => {
   test("create insert query aggregate view", () => {
     const dir = withTempDb();
     try {
-      createUserTable(tasksDefinition);
+      createUserTable(tasksDefinition, { scope: TEST_TABLE_SCOPE });
 
       expect(listTables().tables.map((table) => table.name)).toEqual(["tasks"]);
 
@@ -218,7 +219,7 @@ describe("vellum-db core", () => {
         }),
       );
       ensureMetaSchema();
-      createUserTable(scratchDefinition);
+      createUserTable(scratchDefinition, { scope: TEST_TABLE_SCOPE });
       expect(() => dropUserTable("scratch")).toThrow(/allowDropTable/);
       closeDatabase();
 
@@ -238,12 +239,22 @@ describe("vellum-db core", () => {
     }
   });
 
+  test("createUserTable rejects missing scope", () => {
+    const dir = withTempDb();
+    try {
+      expect(() => createUserTable(tasksDefinition)).toThrow(/scope is required/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   test("scope filter and list pagination", () => {
     const dir = withTempDb();
     try {
       const alpha = createUserTable(alphaTasksDefinition, { scope: "project_a" });
       createUserTable(betaNotesDefinition, { scope: "project_b" });
-      createUserTable(orphanDefinition);
+      createUserTable(orphanDefinition, { scope: "misc" });
+      alterUserTable({ table: "orphan", scope: null });
 
       expect(
         listTables({ scope: "project_a" }).tables.map((table) => table.name),
@@ -286,7 +297,7 @@ describe("vellum-db core", () => {
   test("db_dump and db_load round-trip json csv jsonl xlsx", () => {
     const dir = withTempDb();
     try {
-      createUserTable(itemsDefinition);
+      createUserTable(itemsDefinition, { scope: TEST_TABLE_SCOPE });
       const itemsTable = listTables().tables.find(
         (entry) => entry.name === "items",
       )!;
@@ -358,7 +369,7 @@ describe("vellum-db core", () => {
   test("on_conflict ignore and replace by primary key", () => {
     const dir = withTempDb();
     try {
-      const table = createUserTable(itemsDefinition);
+      const table = createUserTable(itemsDefinition, { scope: TEST_TABLE_SCOPE });
       const first = insertTableRow(table, { title: "one", points: 1, active: true });
       expect(first.outcome).toBe("inserted");
       expect(first.id).toMatch(/^[A-Za-z0-9_-]{21}$/);

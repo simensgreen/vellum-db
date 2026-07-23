@@ -1,27 +1,27 @@
 [
   {
-    "id": "create-table-should-trigger",
+    "id": "migrate-up-should-trigger",
     "should_trigger": true,
     "target_skill": "vellum-db-meta",
-    "query": "Create a vellum-db table for projects with name, status, and optional due date using TableDefinition."
+    "query": "Apply migrate.up.json to bootstrap the expense tracker schema in vellum-db."
   },
   {
-    "id": "list-schemas-should-trigger",
+    "id": "author-migration-should-trigger",
     "should_trigger": true,
     "target_skill": "vellum-db-meta",
-    "query": "List all structured tables and show me their TableDefinition and columns."
+    "query": "Write a migrate.up.json with tasks table TableDefinition for my domain skill."
   },
   {
-    "id": "add-column-should-trigger",
+    "id": "list-migrations-should-trigger",
     "should_trigger": true,
     "target_skill": "vellum-db-meta",
-    "query": "Add an owner column to the tasks table in vellum-db."
+    "query": "List applied schema migrations in vellum-db."
   },
   {
-    "id": "drop-table-should-trigger",
+    "id": "teardown-should-trigger",
     "should_trigger": true,
     "target_skill": "vellum-db-meta",
-    "query": "Drop the obsolete scratch table from the agent database; allowDropTable is enabled."
+    "query": "Run migrate.down.json to tear down the demo tables; allowDropTable is enabled."
   },
   {
     "id": "query-open-tasks-near-miss-should-not",

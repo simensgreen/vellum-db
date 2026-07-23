@@ -53,8 +53,8 @@ describe("table-definition-editor", () => {
     expect(validateSlug("")).toContain("required");
   });
 
-  test("validateScope allows empty or valid scope", () => {
-    expect(validateScope("")).toBeNull();
+  test("validateScope requires non-empty valid scope", () => {
+    expect(validateScope("")).toContain("required");
     expect(validateScope("finance")).toBeNull();
     expect(validateScope("Finance")).toContain("match");
   });

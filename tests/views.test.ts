@@ -15,6 +15,7 @@ import {
   listViews,
   saveView,
 } from "../src/core/views.ts";
+import { TEST_TABLE_SCOPE } from "./fixtures/test-scope.ts";
 import { tasksDefinition } from "./fixtures/table-definitions.ts";
 import type { TableDefinition } from "../src/core/table/types.ts";
 import { insertTableRow } from "../src/core/insert.ts";
@@ -75,7 +76,7 @@ describe("views", () => {
   test("save list run view with params and scope filter", () => {
     const dir = withTempDb();
     try {
-      createUserTable(tasksDefinition);
+      createUserTable(tasksDefinition, { scope: TEST_TABLE_SCOPE });
       const table = listTables().tables[0]!;
       insertTableRow(table, { title: "Open", status: "open", points: 3 });
       insertTableRow(table, { title: "Done", status: "done", points: 1 });
@@ -94,6 +95,14 @@ describe("views", () => {
         slug: "all_tasks",
         name: "All tasks",
         kind: "query",
+        scope: "general",
+        definition: { table: "tasks" },
+      });
+      saveView({
+        slug: "all_tasks",
+        name: "All tasks",
+        kind: "query",
+        scope: null,
         definition: { table: "tasks" },
       });
 
@@ -120,8 +129,8 @@ describe("views", () => {
   test("query join exposes related column", () => {
     const dir = withTempDb();
     try {
-      createUserTable(projectsDefinition);
-      createUserTable(tasksWithProjectDefinition);
+      createUserTable(projectsDefinition, { scope: TEST_TABLE_SCOPE });
+      createUserTable(tasksWithProjectDefinition, { scope: TEST_TABLE_SCOPE });
       const tasksTable = listTables().tables.find((table) => table.name === "tasks")!;
       const projectRow = insertTableRow(
         listTables().tables.find((table) => table.name === "projects")!,
@@ -151,8 +160,8 @@ describe("views", () => {
   test("view with join runs saved definition", () => {
     const dir = withTempDb();
     try {
-      createUserTable(projectsDefinition);
-      createUserTable(tasksWithProjectDefinition);
+      createUserTable(projectsDefinition, { scope: TEST_TABLE_SCOPE });
+      createUserTable(tasksWithProjectDefinition, { scope: TEST_TABLE_SCOPE });
       const tasksTable = listTables().tables.find((table) => table.name === "tasks")!;
       const projectRow = insertTableRow(
         listTables().tables.find((table) => table.name === "projects")!,
@@ -169,6 +178,7 @@ describe("views", () => {
         slug: "tasks_with_project",
         name: "Tasks with project",
         kind: "query",
+        scope: TEST_TABLE_SCOPE,
         definition: {
           table: "tasks",
           joins: [{ ref: "project_ref", select: { name: "project_name" } }],

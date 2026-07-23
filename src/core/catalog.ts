@@ -97,6 +97,15 @@ export function ensureMetaSchema(database: Database = getDatabase()): void {
       reads INTEGER NOT NULL DEFAULT 0
     )
   `);
+  database.run(`
+    CREATE TABLE IF NOT EXISTS _migrations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      hash TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      migration_json TEXT NOT NULL,
+      applied_at TEXT NOT NULL
+    )
+  `);
   pruneStatsRetention();
 }
 
@@ -120,6 +129,25 @@ export function normalizeScope(scope: unknown): string | null {
       hint: "scope must match [a-z][a-z0-9_]*",
     });
   }
+}
+
+export function requireScope(
+  scope: unknown,
+  context: { entity: string; hint?: string },
+): string {
+  const normalized = normalizeScope(scope);
+  if (normalized === null) {
+    throw new ApiError(
+      "validation_error",
+      `scope is required when creating a ${context.entity}`,
+      {
+        hint:
+          context.hint ??
+          "Pass scope matching [a-z][a-z0-9_]* (query param or migration entry field)",
+      },
+    );
+  }
+  return normalized;
 }
 
 export type ListTablesFilter = {
@@ -212,9 +240,10 @@ export function createUserTable(
     });
   }
 
-  const scope = Object.prototype.hasOwnProperty.call(options, "scope")
-    ? normalizeScope(options.scope)
-    : normalizeScope(definition.scope);
+  const scopeSource = Object.prototype.hasOwnProperty.call(options, "scope")
+    ? options.scope
+    : definition.scope;
+  const scope = requireScope(scopeSource, { entity: "table" });
 
   const definitionJson = JSON.stringify(definition);
   const schemaJson = JSON.stringify(compileRowJsonSchema(definition, { knownTables }));
@@ -245,22 +274,29 @@ export function dropUserTable(name: string): { name: string } {
   if (!getConfig().allowDropTable) {
     throw new ApiError(
       "forbidden",
-      'db_drop_table is disabled (config.allowDropTable = false)',
+      "Table drop is disabled (config.allowDropTable = false)",
       { status: 403 },
     );
   }
   const table = requireTable(name);
   const database = getDatabase();
-  database.run("BEGIN");
+  const startedTransaction = !database.inTransaction;
+  if (startedTransaction) {
+    database.run("BEGIN");
+  }
   try {
     database.run(`DROP TABLE IF EXISTS ${quoteIdent(table.name)}`);
     database.query("DELETE FROM _tables WHERE name = ?").run(table.name);
     invalidateSchemaCache(table.schema_json);
-    database.run("COMMIT");
+    if (startedTransaction) {
+      database.run("COMMIT");
+    }
     refreshStatsSnapshot();
     return { name: table.name };
   } catch (error) {
-    database.run("ROLLBACK");
+    if (startedTransaction) {
+      database.run("ROLLBACK");
+    }
     throw error;
   }
 }
@@ -336,7 +372,10 @@ export function alterUserTable(input: {
   const database = getDatabase();
   const timestamp = nowIso();
 
-  database.run("BEGIN");
+  const startedTransaction = !database.inTransaction;
+  if (startedTransaction) {
+    database.run("BEGIN");
+  }
   try {
     for (const addition of additions) {
       const compiled = compileColumns(nextDefinition, { knownTables }).find(
@@ -375,7 +414,9 @@ export function alterUserTable(input: {
       )
       .run(definitionJson, schemaJson, nextScope, timestamp, table.name);
     invalidateSchemaCache(table.schema_json);
-    database.run("COMMIT");
+    if (startedTransaction) {
+      database.run("COMMIT");
+    }
     refreshStatsSnapshot();
 
     return {
@@ -387,7 +428,9 @@ export function alterUserTable(input: {
       updated_at: timestamp,
     };
   } catch (error) {
-    database.run("ROLLBACK");
+    if (startedTransaction) {
+      database.run("ROLLBACK");
+    }
     throw error;
   }
 }

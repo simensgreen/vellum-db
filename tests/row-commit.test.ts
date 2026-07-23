@@ -13,6 +13,7 @@ import {
   parseConfig,
 } from "../src/db.ts";
 import { tasksDefinition, itemsDefinition } from "./fixtures/table-definitions.ts";
+import { TEST_TABLE_SCOPE } from "./fixtures/test-scope.ts";
 import { POST as commitRowsRoute } from "../routes/rows/commit.ts";
 
 function withTempDb(): string {
@@ -22,7 +23,7 @@ function withTempDb(): string {
     parseConfig({ maxRowsPerQuery: 100, rawSqlMode: "select-only" }),
   );
   ensureMetaSchema();
-  createUserTable(tasksDefinition);
+  createUserTable(tasksDefinition, { scope: TEST_TABLE_SCOPE });
   return dir;
 }
 
@@ -80,7 +81,7 @@ describe("commitRowChanges", () => {
       parseConfig({ maxRowsPerQuery: 100, rawSqlMode: "select-only" }),
     );
     ensureMetaSchema();
-    createUserTable(itemsDefinition);
+    createUserTable(itemsDefinition, { scope: TEST_TABLE_SCOPE });
     try {
       const inserted = insertRow({
         table: "items",
