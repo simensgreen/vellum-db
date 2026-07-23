@@ -5,6 +5,7 @@ import {
   OnConflictSchema,
   OrderSpecSchema,
   PaginationQuerySchema,
+  RefJoinSpecSchema,
   RowRecordSchema,
   TableNameSchema,
 } from "./common.ts";
@@ -18,6 +19,7 @@ export const QueryRowsQuerySchema = PaginationQuerySchema.extend({
   filter: optionalJsonQueryString("filter").pipe(JsonFilterSchema.optional()),
   order: optionalJsonQueryString("order").pipe(z.array(OrderSpecSchema).optional()),
   columns: optionalJsonQueryString("columns").pipe(z.array(z.string()).optional()),
+  joins: optionalJsonQueryString("joins").pipe(z.array(RefJoinSpecSchema).optional()),
 });
 
 export const InsertRowQuerySchema = z.object({
@@ -78,4 +80,6 @@ export const AggregateRowsQuerySchema = PaginationQuerySchema.extend({
   group_by: optionalJsonQueryString("group_by").pipe(z.array(z.string()).optional()),
   filter: optionalJsonQueryString("filter").pipe(JsonFilterSchema.optional()),
   having: optionalJsonQueryString("having").pipe(JsonFilterSchema.optional()),
+  order: optionalJsonQueryString("order").pipe(z.array(OrderSpecSchema).optional()),
+  joins: optionalJsonQueryString("joins").pipe(z.array(RefJoinSpecSchema).optional()),
 });

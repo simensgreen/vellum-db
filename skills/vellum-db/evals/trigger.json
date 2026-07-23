@@ -12,10 +12,10 @@
     "query": "Aggregate total points per status in vellum-db."
   },
   {
-    "id": "saved-query-run-should-trigger",
+    "id": "view-run-should-trigger",
     "should_trigger": true,
     "target_skill": "vellum-db",
-    "query": "Save a named query for tasks by status and run it with status=done."
+    "query": "Save a named view for tasks by status and run it with status=done."
   },
   {
     "id": "list-tables-filter-should-trigger",

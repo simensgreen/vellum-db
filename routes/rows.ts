@@ -35,6 +35,7 @@ export async function GET(request: Request): Promise<Response> {
         limit: query.limit,
         offset: query.offset,
         columns: query.columns,
+        joins: query.joins,
       }),
     );
   });

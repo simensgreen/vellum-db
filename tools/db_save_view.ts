@@ -2,18 +2,19 @@ import type {
   ToolContext,
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
-import {
-  saveSavedQuery,
-  type SavedQueryKind,
-} from "../src/core/saved-queries-api.ts";
+import { saveViewApi, type ViewKind } from "../src/core/views-api.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
   type: "object",
   properties: {
+    slug: {
+      type: "string",
+      description: "View slug ([a-z][a-z0-9_]*)",
+    },
     name: {
       type: "string",
-      description: "Saved query name ([a-z][a-z0-9_]*)",
+      description: "Human-readable view name",
     },
     kind: {
       type: "string",
@@ -26,15 +27,19 @@ const inputSchema = {
     },
     description: {
       type: "string",
-      description: "Human/agent-readable summary of what this query does",
+      description: "Human/agent-readable summary of what this view does",
+    },
+    scope: {
+      type: "string",
+      description: "Optional scope ([a-z][a-z0-9_]*) for grouping views",
     },
   },
-  required: ["name", "kind", "definition"],
+  required: ["slug", "name", "kind", "definition"],
 } as const;
 
 export default {
   description:
-    "Save a named query or aggregate definition for later db_run_saved_query. Upserts by name. Procedure: skill_load { skill: \"vellum-db\" }.",
+    "Save a named query or aggregate view for later db_run_view. Upserts by slug. Procedure: skill_load { skill: \"vellum-db\" }.",
   defaultRiskLevel: "medium" as const,
   category: "data",
   input_schema: inputSchema,
@@ -43,14 +48,17 @@ export default {
     _ctx: ToolContext,
   ): Promise<ToolExecutionResult> {
     return runTool(input, inputSchema, (validated) =>
-      saveSavedQuery({
+      saveViewApi({
+        slug: String(validated.slug),
         name: String(validated.name),
-        kind: validated.kind as SavedQueryKind,
+        kind: validated.kind as ViewKind,
         definition: validated.definition,
         description:
           typeof validated.description === "string"
             ? validated.description
             : undefined,
+        scope:
+          typeof validated.scope === "string" ? validated.scope : undefined,
       }),
     );
   },

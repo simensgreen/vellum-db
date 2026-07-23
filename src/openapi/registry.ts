@@ -28,12 +28,12 @@ import {
   ListTablesQuerySchema,
 } from "../api/schemas/tables.ts";
 import {
-  DeleteSavedQueryQuerySchema,
-  ListSavedQueriesQuerySchema,
-  RunSavedQueryQuerySchema,
-  SaveSavedQueryBodySchema,
-  SaveSavedQueryQuerySchema,
-} from "../api/schemas/saved-queries.ts";
+  DeleteViewQuerySchema,
+  ListViewsQuerySchema,
+  RunViewQuerySchema,
+  SaveViewBodySchema,
+  SaveViewQuerySchema,
+} from "../api/schemas/views.ts";
 import {
   DumpTableQuerySchema,
   ExportTableQuerySchema,
@@ -210,26 +210,26 @@ export function createOpenApiRegistry(): OpenAPIRegistry {
 
   registry.registerPath({
     method: "get",
-    path: "/saved-queries",
-    operationId: "listSavedQueries",
-    summary: "List saved named queries",
-    tags: ["saved-queries"],
-    request: { query: ListSavedQueriesQuerySchema },
+    path: "/views",
+    operationId: "listViews",
+    summary: "List named views",
+    tags: ["views"],
+    request: { query: ListViewsQuerySchema },
     responses: successResponses,
   });
 
   registry.registerPath({
     method: "post",
-    path: "/saved-queries",
-    operationId: "saveQuery",
-    summary: "Save a named query or aggregate",
-    tags: ["saved-queries"],
+    path: "/views",
+    operationId: "saveView",
+    summary: "Save a named query or aggregate view",
+    tags: ["views"],
     request: {
-      query: SaveSavedQueryQuerySchema,
+      query: SaveViewQuerySchema,
       body: {
         content: {
           "application/json": {
-            schema: SaveSavedQueryBodySchema.meta({
+            schema: SaveViewBodySchema.meta({
               description:
                 "Query or aggregate definition (same shape as db_query / db_aggregate input)",
             }),
@@ -242,21 +242,21 @@ export function createOpenApiRegistry(): OpenAPIRegistry {
 
   registry.registerPath({
     method: "get",
-    path: "/saved-queries/run",
-    operationId: "runSavedQuery",
-    summary: "Run a saved named query",
-    tags: ["saved-queries"],
-    request: { query: RunSavedQueryQuerySchema },
+    path: "/views/run",
+    operationId: "runView",
+    summary: "Run a named view",
+    tags: ["views"],
+    request: { query: RunViewQuerySchema },
     responses: successResponses,
   });
 
   registry.registerPath({
     method: "delete",
-    path: "/saved-queries/delete",
-    operationId: "deleteSavedQuery",
-    summary: "Delete a saved named query",
-    tags: ["saved-queries"],
-    request: { query: DeleteSavedQueryQuerySchema },
+    path: "/views/delete",
+    operationId: "deleteView",
+    summary: "Delete a named view",
+    tags: ["views"],
+    request: { query: DeleteViewQuerySchema },
     responses: successResponses,
   });
 
@@ -350,9 +350,9 @@ export const registeredRoutePaths = [
   "/rows",
   "/rows/commit",
   "/aggregate",
-  "/saved-queries",
-  "/saved-queries/run",
-  "/saved-queries/delete",
+  "/views",
+  "/views/run",
+  "/views/delete",
   "/load",
   "/dump",
   "/export",

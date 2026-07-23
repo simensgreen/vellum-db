@@ -25,8 +25,8 @@
       "description": "Aggregations"
     },
     {
-      "name": "saved-queries",
-      "description": "Named query definitions"
+      "name": "views",
+      "description": "Named query and aggregate views"
     },
     {
       "name": "io",
@@ -969,6 +969,14 @@
             "required": false,
             "name": "columns",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "joins",
+            "in": "query"
           }
         ],
         "responses": {
@@ -1798,6 +1806,22 @@
             "required": false,
             "name": "having",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "order",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "joins",
+            "in": "query"
           }
         ],
         "responses": {
@@ -1911,12 +1935,12 @@
         }
       }
     },
-    "/saved-queries": {
+    "/views": {
       "get": {
-        "operationId": "listSavedQueries",
-        "summary": "List saved named queries",
+        "operationId": "listViews",
+        "summary": "List named views",
         "tags": [
-          "saved-queries"
+          "views"
         ],
         "parameters": [
           {
@@ -1954,10 +1978,19 @@
           },
           {
             "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "required": false,
+            "name": "scope",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "string"
             },
             "required": false,
-            "name": "name_prefix",
+            "name": "slug_prefix",
             "in": "query"
           }
         ],
@@ -2072,12 +2105,21 @@
         }
       },
       "post": {
-        "operationId": "saveQuery",
-        "summary": "Save a named query or aggregate",
+        "operationId": "saveView",
+        "summary": "Save a named query or aggregate view",
         "tags": [
-          "saved-queries"
+          "views"
         ],
         "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "slug",
+            "in": "query"
+          },
           {
             "schema": {
               "type": "string",
@@ -2105,6 +2147,15 @@
             },
             "required": false,
             "name": "description",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "required": false,
+            "name": "scope",
             "in": "query"
           }
         ],
@@ -2230,12 +2281,12 @@
         }
       }
     },
-    "/saved-queries/run": {
+    "/views/run": {
       "get": {
-        "operationId": "runSavedQuery",
-        "summary": "Run a saved named query",
+        "operationId": "runView",
+        "summary": "Run a named view",
         "tags": [
-          "saved-queries"
+          "views"
         ],
         "parameters": [
           {
@@ -2244,7 +2295,7 @@
               "minLength": 1
             },
             "required": true,
-            "name": "name",
+            "name": "slug",
             "in": "query"
           },
           {
@@ -2367,12 +2418,12 @@
         }
       }
     },
-    "/saved-queries/delete": {
+    "/views/delete": {
       "delete": {
-        "operationId": "deleteSavedQuery",
-        "summary": "Delete a saved named query",
+        "operationId": "deleteView",
+        "summary": "Delete a named view",
         "tags": [
-          "saved-queries"
+          "views"
         ],
         "parameters": [
           {
@@ -2381,7 +2432,7 @@
               "minLength": 1
             },
             "required": true,
-            "name": "name",
+            "name": "slug",
             "in": "query"
           }
         ],

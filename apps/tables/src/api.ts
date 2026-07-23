@@ -272,3 +272,68 @@ export async function alterTable(input: {
   }
   return response.json();
 }
+
+export type ViewKind = "query" | "aggregate";
+
+export type ViewSummary = {
+  slug: string;
+  name: string;
+  kind: ViewKind;
+  scope: string | null;
+  description: string | null;
+  definition: Record<string, unknown>;
+  param_names: string[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type ViewsListResponse = {
+  views: ViewSummary[];
+  count: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
+};
+
+export type ViewRunResponse = {
+  slug: string;
+  name: string;
+  kind: ViewKind;
+  result: {
+    table?: string;
+    count: number;
+    total_count?: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+    rows: Record<string, unknown>[];
+  };
+};
+
+export async function fetchViews(
+  offset = 0,
+  limit = 100,
+): Promise<ViewsListResponse> {
+  const response = await vellumFetch(
+    `${API_PREFIX}/views?limit=${limit}&offset=${offset}`,
+  );
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return response.json() as Promise<ViewsListResponse>;
+}
+
+export async function runView(
+  slug: string,
+  params?: Record<string, unknown>,
+): Promise<ViewRunResponse> {
+  const query = new URLSearchParams({ slug });
+  if (params && Object.keys(params).length > 0) {
+    query.set("params", JSON.stringify(params));
+  }
+  const response = await vellumFetch(`${API_PREFIX}/views/run?${query}`);
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return response.json() as Promise<ViewRunResponse>;
+}

@@ -15,6 +15,8 @@ import { GET as statsGet } from "../routes/stats.ts";
 import { GET as exportTableGet } from "../routes/export.ts";
 import { POST as importTablePost } from "../routes/import.ts";
 import { tableDataTag } from "../apps/tables/src/sync-tags.ts";
+import { GET as listViewsGet } from "../routes/views.ts";
+import { GET as runViewGet } from "../routes/views/run.ts";
 import { seedDevDashboardData } from "./seed-dev-dashboard.ts";
 
 const ROOT = join(import.meta.dir, "..");
@@ -47,6 +49,12 @@ const routeHandlers: Record<string, Partial<Record<string, RouteHandler>>> = {
   },
   "/import": {
     POST: importTablePost,
+  },
+  "/views": {
+    GET: listViewsGet,
+  },
+  "/views/run": {
+    GET: runViewGet,
   },
 };
 

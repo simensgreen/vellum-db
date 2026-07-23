@@ -6,11 +6,13 @@ import {
   compileAggregateQuery,
   type AggregateDefinition,
   type AggregateMetric,
+  type OrderSpec,
+  type RefJoinSpec,
 } from "./query-compile.ts";
 import { requireTable } from "./catalog.ts";
 import { isUserTableName, recordStatsDelta } from "./stats-store.ts";
 
-export type { AggregateDefinition, AggregateMetric };
+export type { AggregateDefinition, AggregateMetric, OrderSpec, RefJoinSpec };
 
 export function executeAggregateDefinition(definition: AggregateDefinition) {
   const table = requireTable(definition.table);
@@ -38,8 +40,10 @@ export function buildAggregateDefinition(input: {
   group_by?: string[];
   filter?: JsonFilter;
   having?: JsonFilter;
+  order?: OrderSpec[];
   limit?: number;
   offset?: number;
+  joins?: RefJoinSpec[];
 }): AggregateDefinition {
   return {
     table: input.table,
@@ -47,7 +51,9 @@ export function buildAggregateDefinition(input: {
     group_by: input.group_by,
     filter: input.filter,
     having: input.having,
+    order: input.order,
     limit: input.limit,
     offset: input.offset,
+    joins: input.joins,
   };
 }

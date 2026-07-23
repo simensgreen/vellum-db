@@ -20,11 +20,12 @@ import {
 } from "../src/db.ts";
 import { compileSelectQuery } from "../src/core/query-compile.ts";
 import {
-  deleteSavedQuery,
-  listSavedQueries,
-  saveQuery,
+  deleteView,
+  extractViewParamNames,
+  listViews,
+  saveView,
   substituteParams,
-} from "../src/core/saved-queries.ts";
+} from "../src/core/views.ts";
 import { guardRawSql } from "../src/sql-guard.ts";
 import { validateRowAgainstSchema } from "../src/schema-validate.ts";
 import { dumpTableToFile, ioModeFromFilename, loadTableFromFile } from "../src/core/table-io.ts";
@@ -52,7 +53,7 @@ afterEach(() => {
 });
 
 describe("vellum-db core", () => {
-  test("create insert query aggregate saved query", () => {
+  test("create insert query aggregate view", () => {
     const dir = withTempDb();
     try {
       createUserTable(tasksDefinition);
@@ -108,16 +109,20 @@ describe("vellum-db core", () => {
       });
       expect(aggregated.count).toBe(2);
 
-      saveQuery({
-        name: "open_tasks",
+      saveView({
+        slug: "open_tasks",
+        name: "Open tasks",
         kind: "query",
         definition: {
           table: "tasks",
           filter: { status: "$status" },
         },
         description: "Tasks by status",
+        scope: "work",
       });
-      expect(listSavedQueries().queries).toHaveLength(1);
+      expect(listViews().views).toHaveLength(1);
+      expect(listViews({ scope: "work" }).views).toHaveLength(1);
+      expect(listViews({ scope: "other" }).views).toHaveLength(0);
       const bound = substituteParams(
         { table: "tasks", filter: { status: "$status" } },
         { status: "done" },
@@ -126,8 +131,8 @@ describe("vellum-db core", () => {
         table: "tasks",
         filter: { status: "done" },
       });
-      deleteSavedQuery("open_tasks");
-      expect(listSavedQueries().queries).toHaveLength(0);
+      deleteView("open_tasks");
+      expect(listViews().views).toHaveLength(0);
 
       alterUserTable({
         table: "tasks",

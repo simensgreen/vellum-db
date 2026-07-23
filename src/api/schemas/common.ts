@@ -17,7 +17,7 @@ export const IoModeSchema = z.enum(["csv", "json", "jsonl", "xlsx"], {
   message: 'mode must be "csv", "json", "jsonl", or "xlsx"',
 });
 
-export const SavedQueryKindSchema = z.enum(["query", "aggregate"], {
+export const ViewKindSchema = z.enum(["query", "aggregate"], {
   message: 'kind must be "query" or "aggregate"',
 });
 
@@ -33,6 +33,15 @@ export const RowRecordSchema = z.record(z.string(), z.unknown());
 export const OrderSpecSchema = z.object({
   column: z.string(),
   direction: z.enum(["asc", "desc"]).optional(),
+});
+
+export const JoinTypeSchema = z.enum(["left", "inner", "right"]);
+
+export const RefJoinSpecSchema = z.object({
+  ref: z.string(),
+  source: z.string().optional(),
+  type: JoinTypeSchema.optional(),
+  select: z.record(z.string(), z.string()),
 });
 
 export const AggregateMetricSchema = z.object({

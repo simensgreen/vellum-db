@@ -38,7 +38,7 @@ export function buildOpenApiDocument() {
       { name: "tables", description: "Table catalog and DDL" },
       { name: "rows", description: "Row CRUD and query" },
       { name: "aggregate", description: "Aggregations" },
-      { name: "saved-queries", description: "Named query definitions" },
+      { name: "views", description: "Named query and aggregate views" },
       { name: "io", description: "Import and export" },
       { name: "sql", description: "Raw SQL escape hatch" },
     ],

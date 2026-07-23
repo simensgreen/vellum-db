@@ -1,7 +1,7 @@
 {
   "name": "vellum-db",
-  "version": "0.2.0",
-  "description": "Structured storage for Vellum agents: TableDefinition tables, query/aggregate via JSON, named saved queries.",
+  "version": "0.3.0",
+  "description": "Structured storage for Vellum agents: TableDefinition tables, query/aggregate via JSON, named views.",
   "private": true,
   "license": "MIT",
   "type": "module",

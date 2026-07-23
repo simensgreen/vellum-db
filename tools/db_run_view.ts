@@ -2,24 +2,28 @@ import type {
   ToolContext,
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
-import { runSavedQueryView } from "../src/core/saved-queries-api.ts";
+import { runView } from "../src/core/views-api.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
   type: "object",
   properties: {
-    name: { type: "string" },
+    slug: {
+      type: "string",
+      description: "View slug",
+    },
     params: {
       type: "object",
-      description: 'Values for "$param" placeholders in the saved definition',
+      description:
+        "Map of placeholder name to value for every \"$param\" in the view definition",
     },
   },
-  required: ["name"],
+  required: ["slug"],
 } as const;
 
 export default {
   description:
-    "Run a previously saved named query or aggregate. Pass params to bind $placeholders. Procedure: skill_load { skill: \"vellum-db\" }.",
+    "Execute a previously saved view. Bind every \"$placeholder\" via params. Procedure: skill_load { skill: \"vellum-db\" }.",
   defaultRiskLevel: "low" as const,
   category: "data",
   input_schema: inputSchema,
@@ -34,8 +38,8 @@ export default {
         !Array.isArray(validated.params)
           ? (validated.params as Record<string, unknown>)
           : undefined;
-      return runSavedQueryView({
-        name: String(validated.name),
+      return runView({
+        slug: String(validated.slug),
         params,
       });
     });

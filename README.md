@@ -11,7 +11,7 @@ Agents often need durable, structured state: expenses, diet logs, birthdays, pri
 Without a shared store, each feature tends to ship its own plugin and its own CRUD tools. That duplicates work and fragments data. **vellum-db** is the opposite approach:
 
 - **One plugin** owns persistence, validation, query, and aggregation.
-- **Domain logic lives in skills** — table names, schemas, when to query, which saved queries to run, and why — not in new TypeScript tools.
+- **Domain logic lives in skills** — table names, schemas, when to query, which views to run, and why — not in new TypeScript tools.
 - An agent that loads the right skill can use the shared tools immediately. No per-domain CRUD code required.
 
 Example: an “expense tracker” skill documents tables like `expenses` and `categories`, the **TableDefinition** for each, how to log a purchase, and which aggregate answers “spend by month.” The skill does not implement storage; it teaches the agent how to drive **vellum-db**.
@@ -33,15 +33,15 @@ If the shape fits “rows in tables + filters + rollups,” a skill on top of th
 1. **Define tables** — **TableDefinition DSL** → SQLite columns (`db_create_table`). Optional `scope` to group related tables. See **`vellum-db-meta`**.
 2. **Write and change rows** — `db_insert`, `db_update`, `db_delete` with JSON filters (column slugs).
 3. **Read and analyze** — `db_query` (filter / order / page) and `db_aggregate` (count, sum, avg, min, max, group by).
-4. **Reuse analysis** — `db_save_query` / `db_run_saved_query` with `$param` placeholders.
-5. **Discover** — `db_list_tables` (and saved-query listing) with filters and pagination.
+4. **Reuse analysis** — `db_save_view` / `db_run_view` with `$param` placeholders.
+5. **Discover** — `db_list_tables` and `db_list_views` with filters and pagination.
 6. **Import / export** — `db_load` / `db_dump` (`csv`, `json`, `jsonl`, `xlsx`).
 
 Built-in skills:
 
 | Skill | Load | Role |
 | --- | --- | --- |
-| `vellum-db` | `skill_load { "skill": "vellum-db" }` | Query, aggregate, row ops, saved queries, optional SQL escape hatch |
+| `vellum-db` | `skill_load { "skill": "vellum-db" }` | Query, aggregate, row ops, views, optional SQL escape hatch |
 | `vellum-db-meta` | `skill_load { "skill": "vellum-db-meta" }` | Create / alter / drop tables |
 
 Domain skills should depend on these: spell out table names, schemas, and procedures; call the shared `db_*` tools.
@@ -91,7 +91,7 @@ Vellum can also attach MCP servers. Nearest options and how this project differs
 
 **When MCP is enough:** you want an agent to run SQL against a SQLite file and are fine teaching schemas in prompts.
 
-**When vellum-db fits better:** many domain skills should share one validated store; routine ops stay JSON (filters, aggregates, saved queries, import/export); persistence lives in-process via Bun’s SQLite in the Vellum runtime.
+**When vellum-db fits better:** many domain skills should share one validated store; routine ops stay JSON (filters, aggregates, views, import/export); persistence lives in-process via Bun’s SQLite in the Vellum runtime.
 
 Browse more servers: [MCP Registry](https://registry.modelcontextprotocol.io/).
 

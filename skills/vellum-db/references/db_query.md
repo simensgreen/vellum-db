@@ -12,10 +12,31 @@ Read rows with a JSON filter (not SQL). Supports order, column projection, and `
 | `limit` | no | Capped by `maxRowsPerQuery` |
 | `offset` | no | Default `0` |
 | `columns` | no | Subset of slugs to return (default: all columns) |
+| `joins` | no | Ref joins (`left`/`inner`/`right`, multi-hop) — [view-query-model.md](view-query-model.md) |
 
 ## Output
 
-`{ table, count, limit, offset, has_more, rows }`. Each row object is keyed by column slug (including primary key column(s)).
+`{ table, count, limit, offset, has_more, rows }`. Each row object is keyed by column slug (including primary key column(s) and join output aliases).
+
+## Joins
+
+Ref joins follow a `ref` column and project columns from the related table. Optional `type` (`left` default, `inner`, `right`) and `source` for multi-hop chains. Full matrix: [view-query-model.md](view-query-model.md).
+
+```json
+{
+  "table": "tasks",
+  "joins": [
+    {
+      "ref": "project_ref",
+      "type": "inner",
+      "select": { "name": "project_name" }
+    }
+  ],
+  "columns": ["task_id", "title", "status", "points", "project_name"]
+}
+```
+
+`select` maps a column slug on the joined table to an output alias. Filters and `order` may use base columns and join output aliases.
 
 ## Filters
 

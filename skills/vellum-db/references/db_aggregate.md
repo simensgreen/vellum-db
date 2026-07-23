@@ -8,9 +8,11 @@ Compute metrics (`count`, `sum`, `avg`, `min`, `max`) with optional `group_by`, 
 | --- | --- | --- |
 | `table` | yes | Table name |
 | `metrics` | yes | Non-empty array of `{ fn, column?, as }` |
-| `group_by` | no | Column names |
+| `group_by` | no | Base or join output column names |
 | `filter` | no | JSON filter (WHERE) |
 | `having` | no | JSON filter on metric aliases (HAVING) |
+| `order` | no | Sort groups by column or metric alias |
+| `joins` | no | Ref joins — [view-query-model.md](view-query-model.md) |
 | `limit` | no | Capped by `maxRowsPerQuery` |
 | `offset` | no | Default `0` |
 
@@ -62,4 +64,4 @@ Compute metrics (`count`, `sum`, `avg`, `min`, `max`) with optional `group_by`, 
 }
 ```
 
-Filter JSON shapes match `db_query` (plain equality, operators, `and`/`or`). Prefer saving repeated aggregates with `db_save_query`.
+Filter JSON shapes match `db_query` (plain equality, operators, `and`/`or`). Joined aggregates: `metrics[].column` must stay on the base table; `group_by` / `filter` may use join aliases. See [view-query-model.md](view-query-model.md). Prefer saving repeated aggregates with `db_save_view`.

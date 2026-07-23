@@ -20,6 +20,8 @@ export async function GET(request: Request): Promise<Response> {
         group_by: query.group_by,
         filter: query.filter,
         having: query.having,
+        order: query.order,
+        joins: query.joins,
         limit: query.limit,
         offset: query.offset,
       }),

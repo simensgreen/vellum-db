@@ -1,7 +1,7 @@
 /** Static invalidation tags — fixed strings only. */
 export const SYNC_TAGS = {
   tables: "vellum-db:tables",
-  savedQueries: "vellum-db:saved-queries",
+  views: "vellum-db:views",
 } as const;
 
 export type StaticSyncTag = (typeof SYNC_TAGS)[keyof typeof SYNC_TAGS];
@@ -33,8 +33,12 @@ export function invalidationTagsForRowMutation(
   return [tableDataTag(tableName)];
 }
 
-export function invalidationTagsForSavedQueriesChange(): readonly string[] {
-  return [SYNC_TAGS.savedQueries];
+export function invalidationTagsForViewsChange(): readonly string[] {
+  return [SYNC_TAGS.views];
+}
+
+export function subscribeTagsForViewList(): readonly string[] {
+  return [SYNC_TAGS.views];
 }
 
 export function invalidationTagsForRawSqlMutation(): readonly string[] {

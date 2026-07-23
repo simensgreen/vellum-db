@@ -4,26 +4,24 @@ import {
   parseRouteRequest,
 } from "../src/api/parse-request.ts";
 import {
-  ListSavedQueriesQuerySchema,
-  SaveSavedQueryBodySchema,
-  SaveSavedQueryQuerySchema,
-} from "../src/api/schemas/saved-queries.ts";
-import {
-  listSavedQueriesView,
-  saveSavedQuery,
-} from "../src/core/saved-queries-api.ts";
+  ListViewsQuerySchema,
+  SaveViewBodySchema,
+  SaveViewQuerySchema,
+} from "../src/api/schemas/views.ts";
+import { listViewsView, saveViewApi } from "../src/core/views-api.ts";
 import { handleRoute } from "../src/core/route-http.ts";
 
-export const description = "List or save named queries";
+export const description = "List or save named views";
 
 export async function GET(request: Request): Promise<Response> {
   return handleRoute(() => {
-    const query = parseRouteQuery(request, ListSavedQueriesQuerySchema, {
+    const query = parseRouteQuery(request, ListViewsQuerySchema, {
       pagination: true,
     });
-    return listSavedQueriesView({
+    return listViewsView({
       kind: query.kind,
-      name_prefix: query.name_prefix,
+      scope: query.scope,
+      slug_prefix: query.slug_prefix,
       limit: query.limit,
       offset: query.offset,
     });
@@ -33,14 +31,16 @@ export async function GET(request: Request): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   return handleRoute(async () => {
     const { query, body } = await parseRouteRequest(request, {
-      query: SaveSavedQueryQuerySchema,
-      body: SaveSavedQueryBodySchema,
+      query: SaveViewQuerySchema,
+      body: SaveViewBodySchema,
     });
-    return saveSavedQuery({
+    return saveViewApi({
+      slug: query.slug,
       name: query.name,
       kind: query.kind,
       definition: body,
       description: query.description,
+      scope: query.scope,
     });
   });
 }

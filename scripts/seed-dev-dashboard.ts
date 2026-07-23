@@ -2,6 +2,7 @@ import type { TableDefinition } from "../src/core/table/types.ts";
 import { createUserTable, getTable } from "../src/core/catalog.ts";
 import { getDatabase } from "../src/db.ts";
 import { insertRow } from "../src/core/rows.ts";
+import { getView, saveView } from "../src/core/views.ts";
 import {
   measureLiveSnapshot,
   type StatsSnapshot,
@@ -52,6 +53,93 @@ const notesDefinition: TableDefinition = {
       name: "Updated",
       slug: "updated_at",
       data: { type: "timestamp", default: "now" },
+    },
+  ],
+};
+
+const regionsDefinition: TableDefinition = {
+  slug: "regions",
+  name: "Regions",
+  columns: [
+    {
+      name: "Region ID",
+      slug: "region_id",
+      primaryKey: true,
+      data: { type: "nanoid", default: "random" },
+    },
+    {
+      name: "Name",
+      slug: "name",
+      data: { type: "str", minLen: 1 },
+    },
+  ],
+};
+
+const projectsDefinition: TableDefinition = {
+  slug: "projects",
+  name: "Projects",
+  columns: [
+    {
+      name: "Project ID",
+      slug: "project_id",
+      primaryKey: true,
+      data: { type: "nanoid", default: "random" },
+    },
+    {
+      name: "Name",
+      slug: "name",
+      data: { type: "str", minLen: 1 },
+    },
+    {
+      name: "Status",
+      slug: "status",
+      data: {
+        type: "enum",
+        variants: ["active", "paused", "done"],
+        default: 0,
+      },
+    },
+    {
+      name: "Region",
+      slug: "region_ref",
+      data: { type: "ref", table: "regions", column: "region_id" },
+    },
+  ],
+};
+
+const tasksDefinition: TableDefinition = {
+  slug: "tasks",
+  name: "Tasks",
+  columns: [
+    {
+      name: "Task ID",
+      slug: "task_id",
+      primaryKey: true,
+      data: { type: "nanoid", default: "random" },
+    },
+    {
+      name: "Title",
+      slug: "title",
+      data: { type: "str", minLen: 1 },
+    },
+    {
+      name: "Status",
+      slug: "status",
+      data: {
+        type: "enum",
+        variants: ["open", "in_progress", "done"],
+        default: 0,
+      },
+    },
+    {
+      name: "Points",
+      slug: "points",
+      data: { type: "int", min: 0, max: 13 },
+    },
+    {
+      name: "Project",
+      slug: "project_ref",
+      data: { type: "ref", table: "projects", column: "project_id" },
     },
   ],
 };
@@ -231,9 +319,307 @@ function seedTypeShowcaseIfEmpty(): void {
   insertRow({ table: "type_showcase", row: sampleRow });
 }
 
+function seedWorkTables(): void {
+  if (!getTable("regions")) {
+    createUserTable(regionsDefinition, { scope: "work" });
+  }
+  if (!getTable("projects")) {
+    createUserTable(projectsDefinition, { scope: "work" });
+  }
+  if (!getTable("tasks")) {
+    createUserTable(tasksDefinition, { scope: "work" });
+  }
+
+  const database = getDatabase();
+
+  if (tableRowCount("regions") === 0) {
+    for (const name of ["Europe", "Americas", "Asia Pacific"]) {
+      insertRow({ table: "regions", row: { name } });
+    }
+  }
+
+  if (tableRowCount("projects") === 0) {
+    const regions = database
+      .query("SELECT region_id, name FROM regions ORDER BY name")
+      .all() as Array<{ region_id: string; name: string }>;
+    const regionByName = new Map(
+      regions.map((region) => [region.name, region.region_id]),
+    );
+    const europeId = regionByName.get("Europe");
+    const americasId = regionByName.get("Americas");
+
+    for (const row of [
+      { name: "Website relaunch", status: "active", region_ref: europeId },
+      { name: "Mobile app", status: "active", region_ref: europeId },
+      { name: "Data pipeline", status: "active", region_ref: americasId },
+      { name: "Legacy API", status: "paused", region_ref: europeId },
+    ]) {
+      insertRow({ table: "projects", row });
+    }
+  }
+
+  if (tableRowCount("tasks") === 0) {
+    const projects = database
+      .query("SELECT project_id, name FROM projects ORDER BY name")
+      .all() as Array<{ project_id: string; name: string }>;
+
+    const projectByName = new Map(
+      projects.map((project) => [project.name, project.project_id]),
+    );
+    const websiteId = projectByName.get("Website relaunch");
+    const mobileId = projectByName.get("Mobile app");
+    const pipelineId = projectByName.get("Data pipeline");
+
+    const taskRows: Array<Record<string, unknown>> = [
+      {
+        title: "Design landing page",
+        status: "done",
+        points: 5,
+        project_ref: websiteId,
+      },
+      {
+        title: "Implement auth flow",
+        status: "in_progress",
+        points: 8,
+        project_ref: websiteId,
+      },
+      {
+        title: "Push notifications",
+        status: "open",
+        points: 3,
+        project_ref: mobileId,
+      },
+      {
+        title: "Offline sync",
+        status: "open",
+        points: 8,
+        project_ref: mobileId,
+      },
+      {
+        title: "ETL job scheduler",
+        status: "in_progress",
+        points: 5,
+        project_ref: pipelineId,
+      },
+      {
+        title: "Schema validation",
+        status: "open",
+        points: 2,
+        project_ref: pipelineId,
+      },
+    ];
+
+    for (const row of taskRows) {
+      if (row.project_ref) {
+        insertRow({ table: "tasks", row });
+      }
+    }
+  }
+}
+
+function seedSampleViews(): void {
+  if (!getView("tasks_by_status")) {
+    saveView({
+      slug: "tasks_by_status",
+      name: "Tasks by status",
+      kind: "query",
+      scope: "work",
+      description: "Tasks filtered by status, highest points first",
+      definition: {
+        table: "tasks",
+        filter: { status: "$status" },
+        order: [{ column: "points", direction: "desc" }],
+      },
+    });
+  }
+
+  if (!getView("tasks_filtered")) {
+    saveView({
+      slug: "tasks_filtered",
+      name: "Tasks filtered",
+      kind: "query",
+      scope: "work",
+      description: "Tasks by status with a minimum points threshold",
+      definition: {
+        table: "tasks",
+        filter: {
+          status: "$status",
+          points: { gte: "$min_points" },
+        },
+        order: [{ column: "points", direction: "desc" }],
+      },
+    });
+  }
+
+  if (!getView("points_by_status")) {
+    saveView({
+      slug: "points_by_status",
+      name: "Points by status",
+      kind: "aggregate",
+      scope: "work",
+      description: "Sum of story points grouped by task status",
+      definition: {
+        table: "tasks",
+        metrics: [{ fn: "sum", column: "points", as: "total_points" }],
+        group_by: ["status"],
+      },
+    });
+  }
+
+  if (!getView("tasks_with_project")) {
+    saveView({
+      slug: "tasks_with_project",
+      name: "Tasks with project",
+      kind: "query",
+      scope: "work",
+      description: "Tasks joined to project name",
+      definition: {
+        table: "tasks",
+        joins: [
+          {
+            ref: "project_ref",
+            select: { name: "project_name" },
+          },
+        ],
+        columns: ["task_id", "title", "status", "points", "project_name"],
+        order: [{ column: "project_name", direction: "asc" }],
+      },
+    });
+  }
+
+  if (!getView("tasks_with_project_inner")) {
+    saveView({
+      slug: "tasks_with_project_inner",
+      name: "Tasks with project (inner)",
+      kind: "query",
+      scope: "work",
+      description: "Only tasks that have a linked project",
+      definition: {
+        table: "tasks",
+        joins: [
+          {
+            ref: "project_ref",
+            type: "inner",
+            select: { name: "project_name" },
+          },
+        ],
+        columns: ["task_id", "title", "status", "points", "project_name"],
+      },
+    });
+  }
+
+  if (!getView("orphan_projects")) {
+    saveView({
+      slug: "orphan_projects",
+      name: "Projects including orphans",
+      kind: "query",
+      scope: "work",
+      description: "RIGHT join: projects without tasks appear with null task fields",
+      definition: {
+        table: "tasks",
+        joins: [
+          {
+            ref: "project_ref",
+            type: "right",
+            select: {
+              name: "project_name",
+              project_id: "project_id",
+            },
+          },
+        ],
+        columns: ["title", "project_name", "project_id"],
+        order: [{ column: "project_name", direction: "asc" }],
+      },
+    });
+  }
+
+  if (!getView("tasks_with_region")) {
+    saveView({
+      slug: "tasks_with_region",
+      name: "Tasks with region",
+      kind: "query",
+      scope: "work",
+      description: "Multi-hop join: tasks → projects → regions",
+      definition: {
+        table: "tasks",
+        joins: [
+          { ref: "project_ref", select: { name: "project_name" } },
+          {
+            source: "projects",
+            ref: "region_ref",
+            select: { name: "region_name" },
+          },
+        ],
+        columns: ["title", "status", "points", "project_name", "region_name"],
+        order: [{ column: "region_name", direction: "asc" }],
+      },
+    });
+  }
+
+  if (!getView("points_by_project")) {
+    saveView({
+      slug: "points_by_project",
+      name: "Points by project",
+      kind: "aggregate",
+      scope: "work",
+      description: "Aggregate with join, filter, having, and limit",
+      definition: {
+        table: "tasks",
+        joins: [
+          {
+            ref: "project_ref",
+            type: "inner",
+            select: { name: "project_name" },
+          },
+        ],
+        metrics: [
+          { fn: "count", as: "task_count" },
+          { fn: "sum", column: "points", as: "total_points" },
+        ],
+        group_by: ["project_name"],
+        filter: { status: { ne: "done" } },
+        having: { total_points: { gte: 3 } },
+        limit: 10,
+      },
+    });
+  }
+
+  if (!getView("top_projects_by_points")) {
+    saveView({
+      slug: "top_projects_by_points",
+      name: "Top projects by points",
+      kind: "aggregate",
+      scope: "work",
+      description: "Joined aggregate ordered by total points",
+      definition: {
+        table: "tasks",
+        joins: [{ ref: "project_ref", select: { name: "project_name" } }],
+        metrics: [{ fn: "sum", column: "points", as: "total_points" }],
+        group_by: ["project_name"],
+        order: [{ column: "total_points", direction: "desc" }],
+        limit: 5,
+      },
+    });
+  }
+
+  if (!getView("recent_events")) {
+    saveView({
+      slug: "recent_events",
+      name: "Recent events",
+      kind: "query",
+      description: "Latest events (no params)",
+      definition: {
+        table: "events",
+        order: [{ column: "created_at", direction: "desc" }],
+        limit: 10,
+      },
+    });
+  }
+}
+
 function seedSampleTables(): void {
   if (!getTable("events")) {
-    createUserTable(eventsDefinition);
+    createUserTable(eventsDefinition, { scope: "analytics" });
   }
   if (!getTable("notes")) {
     createUserTable(notesDefinition);
@@ -268,11 +654,13 @@ function seedSampleTables(): void {
   }
 
   seedTypeShowcaseIfEmpty();
+  seedWorkTables();
 }
 
 /** Dev-only sample catalog + 30-day _stats history for chart preview. Idempotent. */
 export function seedDevDashboardData(): void {
   seedSampleTables();
+  seedSampleViews();
   const today = utcEpochDay();
   const liveSnapshot = measureLiveSnapshot();
   seedHistoricalStats(today, liveSnapshot);

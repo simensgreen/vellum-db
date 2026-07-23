@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   invalidationTagsForCatalogChange,
   invalidationTagsForRowMutation,
-  invalidationTagsForSavedQueriesChange,
+  invalidationTagsForViewsChange,
   invalidationTagsForRawSqlMutation,
   subscribeTagsForRowView,
   subscribeTagsForTableList,
@@ -26,9 +26,7 @@ describe("sync-tags", () => {
     expect(invalidationTagsForRowMutation("tasks")).toEqual([
       "vellum-db:table:tasks",
     ]);
-    expect(invalidationTagsForSavedQueriesChange()).toEqual([
-      SYNC_TAGS.savedQueries,
-    ]);
+    expect(invalidationTagsForViewsChange()).toEqual([SYNC_TAGS.views]);
     expect(invalidationTagsForRawSqlMutation()).toEqual([SYNC_TAGS.tables]);
   });
 

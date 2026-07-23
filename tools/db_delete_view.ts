@@ -2,21 +2,24 @@ import type {
   ToolContext,
   ToolExecutionResult,
 } from "@vellumai/plugin-api";
-import { deleteSavedQueryByName } from "../src/core/saved-queries-api.ts";
+import { deleteViewBySlug } from "../src/core/views-api.ts";
 import { runTool } from "../src/tool-result.ts";
 
 const inputSchema = {
   type: "object",
   properties: {
-    name: { type: "string" },
+    slug: {
+      type: "string",
+      description: "View slug to delete",
+    },
   },
-  required: ["name"],
+  required: ["slug"],
 } as const;
 
 export default {
   description:
-    "Delete a saved named query by name. Procedure: skill_load { skill: \"vellum-db\" }.",
-  defaultRiskLevel: "medium" as const,
+    "Delete a named view by slug. Procedure: skill_load { skill: \"vellum-db\" }.",
+  defaultRiskLevel: "high" as const,
   category: "data",
   input_schema: inputSchema,
   async execute(
@@ -24,7 +27,7 @@ export default {
     _ctx: ToolContext,
   ): Promise<ToolExecutionResult> {
     return runTool(input, inputSchema, (validated) =>
-      deleteSavedQueryByName(String(validated.name)),
+      deleteViewBySlug(String(validated.slug)),
     );
   },
 };

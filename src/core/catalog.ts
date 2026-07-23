@@ -74,11 +74,13 @@ export function ensureMetaSchema(database: Database = getDatabase()): void {
     )
   `);
   database.run(`
-    CREATE TABLE IF NOT EXISTS _saved_queries (
-      name TEXT PRIMARY KEY NOT NULL,
+    CREATE TABLE IF NOT EXISTS _views (
+      slug TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
       kind TEXT NOT NULL,
       definition_json TEXT NOT NULL,
       description TEXT,
+      scope TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     )

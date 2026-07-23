@@ -8,7 +8,22 @@ import {
   executeAggregateDefinition,
   type AggregateMetric,
 } from "../src/core/aggregate.ts";
+import type { OrderSpec, RefJoinSpec } from "../src/core/query-compile.ts";
 import { runTool } from "../src/tool-result.ts";
+
+const refJoinItemSchema = {
+  type: "object",
+  properties: {
+    ref: { type: "string" },
+    source: { type: "string" },
+    type: { type: "string", enum: ["left", "inner", "right"] },
+    select: {
+      type: "object",
+      additionalProperties: { type: "string" },
+    },
+  },
+  required: ["ref", "select"],
+} as const;
 
 const inputSchema = {
   type: "object",
@@ -36,6 +51,21 @@ const inputSchema = {
       type: "object",
       description: "JSON filter applied after GROUP BY (HAVING)",
     },
+    order: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          column: { type: "string" },
+          direction: { type: "string", enum: ["asc", "desc"] },
+        },
+        required: ["column"],
+      },
+    },
+    joins: {
+      type: "array",
+      items: refJoinItemSchema,
+    },
     limit: { type: "integer", minimum: 1 },
     offset: { type: "integer", minimum: 0 },
   },
@@ -46,7 +76,7 @@ export { executeAggregateDefinition };
 
 export default {
   description:
-    "Aggregate rows with JSON metrics (count/sum/avg/min/max), optional group_by/filter/having/limit/offset (has_more). Prefer db_save_query for repeats. Procedure: skill_load { skill: \"vellum-db\" }.",
+    "Aggregate rows with JSON metrics (count/sum/avg/min/max), optional joins/group_by/filter/having/order/limit/offset (has_more). Prefer db_save_view for repeats. Procedure: skill_load { skill: \"vellum-db\" }.",
   defaultRiskLevel: "low" as const,
   category: "data",
   input_schema: inputSchema,
@@ -62,6 +92,8 @@ export default {
           group_by: validated.group_by as string[] | undefined,
           filter: validated.filter as JsonFilter | undefined,
           having: validated.having as JsonFilter | undefined,
+          order: validated.order as OrderSpec[] | undefined,
+          joins: validated.joins as RefJoinSpec[] | undefined,
           limit: validated.limit as number | undefined,
           offset: validated.offset as number | undefined,
         }),

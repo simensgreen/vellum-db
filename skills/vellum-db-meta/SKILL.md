@@ -13,7 +13,7 @@ metadata:
       - "User asks to drop a table or inspect table definitions"
     avoid-when:
       - "User wants to query, aggregate, or analyze existing rows"
-      - "User wants insert, update, delete, or saved queries"
+      - "User wants insert, update, delete, or views"
     category: data
     related_skills:
       - vellum-db
@@ -21,7 +21,7 @@ metadata:
 
 # Vellum DB Meta (table / schema management)
 
-Manage structured tables in the vellum-db plugin: discover definitions, create from **TableDefinition DSL**, evolve columns, drop when allowed. For row CRUD, queries, aggregates, and saved queries, load **`vellum-db`** instead.
+Manage structured tables in the vellum-db plugin: discover definitions, create from **TableDefinition DSL**, evolve columns, drop when allowed. For row CRUD, queries, aggregates, and views, load **`vellum-db`** instead.
 
 ## When to Use
 

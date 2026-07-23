@@ -1,6 +1,6 @@
 # vellum-db
 
-Vellum plugin: structured storage for agents (TableDefinition DSL tables, JSON query/aggregate, named saved queries).
+Vellum plugin: structured storage for agents (TableDefinition DSL tables, JSON query/aggregate, named views).
 
 ## Scope
 
@@ -78,7 +78,8 @@ bun run dev:app   # Tables app UI: http://localhost:5173 (temp SQLite + route pr
 - Prefer JSON tools over `db_sql` for routine work.
 - Tool `input_schema` MUST NOT set `additionalProperties: false` at the tool-input root (or anywhere that rejects host-injected fields). Vellum injects `activity` into tool calls; rejecting unknown properties breaks every invocation.
 - List tools that can return many rows use `limit`/`offset` and return `has_more`.
-- Optional table `scope` (`[a-z][a-z0-9_]*`) filters `db_list_tables`; set on create/alter.
+- Optional table or view `scope` (`[a-z][a-z0-9_]*`) filters `db_list_tables` / `db_list_views`; set on create.
+- View query definitions support ref joins (`left`/`inner`/`right`, multi-hop) on `kind: query` and `kind: aggregate`; see `skills/vellum-db/references/view-query-model.md`.
 - `db_load` / `db_dump`: relative `path` under the Vellum workspace; `mode` is `csv` | `json` | `jsonl` | `xlsx`.
 - REST file IO (Database app): `GET /export?table=&mode=` (download); `POST /import?table=&filename=` (raw body; format from filename or `mode` query).
 - REST batch row commit (Database app): `POST /rows/commit?table=` body `{ insert?, update?, delete? }`.

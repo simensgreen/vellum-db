@@ -3,7 +3,7 @@ const RESERVED_TABLE_PREFIX = "_";
 
 export function assertSafeIdentifier(
   value: string,
-  kind: "table" | "column" | "query",
+  kind: "table" | "column" | "query" | "view",
 ): string {
   if (!IDENTIFIER_PATTERN.test(value)) {
     throw new Error(
