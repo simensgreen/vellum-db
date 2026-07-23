@@ -36,6 +36,7 @@ This repository root **is** the plugin (`package.json` + `hooks/` + `tools/` + `
 | `src/core/sync-tags.ts` | Invalidation tag constants + builders (canonical) |
 | `skills/vellum-db/` | Query/analyze procedures + `references/` |
 | `skills/vellum-db-meta/` | Create/alter/drop procedures |
+| `examples/expenses/` | Sample domain skill (expense tracker); **not** indexed by Vellum — copy to workspace `skills/` to activate; JSON schemas in `examples/expenses/schemas/` |
 | `tests/` | Bun tests (`bun test`) |
 
 ### Why `tools/` and not skill `TOOLS.json`

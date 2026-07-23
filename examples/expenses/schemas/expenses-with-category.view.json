@@ -1,0 +1,37 @@
+{
+  "slug": "expenses_with_category",
+  "name": "Expenses with category",
+  "kind": "query",
+  "scope": "expenses",
+  "description": "Expense rows joined to category, filtered by spent_at range",
+  "definition": {
+    "table": "expenses",
+    "joins": [
+      {
+        "ref": "category_id",
+        "type": "inner",
+        "select": {
+          "name": "category_name",
+          "description": "category_description"
+        }
+      }
+    ],
+    "filter": {
+      "and": [
+        { "spent_at": { "gte": "$from" } },
+        { "spent_at": { "lte": "$to" } }
+      ]
+    },
+    "columns": [
+      "expense_id",
+      "amount",
+      "currency",
+      "description",
+      "spent_at",
+      "notes",
+      "category_name",
+      "category_description"
+    ],
+    "order": [{ "column": "spent_at", "direction": "desc" }]
+  }
+}

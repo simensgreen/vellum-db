@@ -14,7 +14,7 @@ Without a shared store, each feature tends to ship its own plugin and its own CR
 - **Domain logic lives in skills** — table names, schemas, when to query, which views to run, and why — not in new TypeScript tools.
 - An agent that loads the right skill can use the shared tools immediately. No per-domain CRUD code required.
 
-Example: an “expense tracker” skill documents tables like `expenses` and `categories`, the **TableDefinition** for each, how to log a purchase, and which aggregate answers “spend by month.” The skill does not implement storage; it teaches the agent how to drive **vellum-db**.
+Example: the expense tracker skill in [`examples/expenses/`](examples/expenses/) documents `category` and `expenses` tables, seed categories, saved views with date params, and how to log or report spending. Copy to workspace `skills/expenses/` to activate (see [references/install.md](examples/expenses/references/install.md)). The skill does not implement storage; it teaches the agent how to drive **vellum-db**.
 
 ## What you can build on it
 
@@ -45,6 +45,8 @@ Built-in skills:
 | `vellum-db-meta` | `skill_load { "skill": "vellum-db-meta" }` | Create / alter / drop tables |
 
 Domain skills should depend on these: spell out table names, schemas, and procedures; call the shared `db_*` tools.
+
+Example domain skill (not bundled in the plugin index): [`examples/expenses/`](examples/expenses/) — personal expense tracking with category reference table and parameterized views.
 
 ## REST API
 

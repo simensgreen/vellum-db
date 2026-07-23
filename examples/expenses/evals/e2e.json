@@ -1,0 +1,17 @@
+[
+  {
+    "id": "bootstrap-and-seed",
+    "query": "Set up expense tracker from scratch.",
+    "verify": "Workflow steps 1-5: category table created, 26 categories seeded, expenses table created, both views saved. db_list_tables scope expenses shows category and expenses; db_list_views scope expenses shows expenses_with_category and spending_by_category."
+  },
+  {
+    "id": "record-grocery",
+    "query": "Log $42.50 groceries in USD.",
+    "verify": "db_query category by name Groceries, then db_insert into expenses with resolved category_id, amount 42.50, currency USD. Confirm row via db_query or db_run_view."
+  },
+  {
+    "id": "july-report",
+    "query": "Total spending by category for July 2026.",
+    "verify": "db_run_view spending_by_category with params from 2026-07-01T00:00:00.000Z and to 2026-07-31T23:59:59.999Z. Reply lists category_name, total_amount, expense_count."
+  }
+]

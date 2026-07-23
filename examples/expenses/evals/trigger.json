@@ -1,0 +1,44 @@
+[
+  {
+    "id": "log-expense",
+    "should_trigger": true,
+    "target_skill": "expenses",
+    "query": "Log a $15 coffee expense in USD under Food & dining."
+  },
+  {
+    "id": "list-recent",
+    "should_trigger": true,
+    "target_skill": "expenses",
+    "query": "Show my expenses this month with category names."
+  },
+  {
+    "id": "spending-by-category",
+    "should_trigger": true,
+    "target_skill": "expenses",
+    "query": "How much did I spend by category in July 2026?"
+  },
+  {
+    "id": "bootstrap-tables",
+    "should_trigger": true,
+    "target_skill": "expenses",
+    "query": "Set up the expense tracker category and expenses tables."
+  },
+  {
+    "id": "create-generic-table-near-miss",
+    "should_trigger": false,
+    "target_skill": "expenses",
+    "query": "Create a new projects table with title and status columns."
+  },
+  {
+    "id": "query-generic-near-miss",
+    "should_trigger": false,
+    "target_skill": "expenses",
+    "query": "Query open tasks ordered by priority."
+  },
+  {
+    "id": "git-status",
+    "should_trigger": false,
+    "target_skill": "expenses",
+    "query": "What does git status show?"
+  }
+]

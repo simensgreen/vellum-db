@@ -1,0 +1,25 @@
+{
+  "scope": "expenses",
+  "definition": {
+    "slug": "category",
+    "name": "Expense categories",
+    "columns": [
+      {
+        "name": "Category ID",
+        "slug": "category_id",
+        "primaryKey": true,
+        "data": { "type": "nanoid", "default": "random" }
+      },
+      {
+        "name": "Name",
+        "slug": "name",
+        "data": { "type": "str", "minLen": 1 }
+      },
+      {
+        "name": "Description",
+        "slug": "description",
+        "data": { "type": "str", "minLen": 1 }
+      }
+    ]
+  }
+}
